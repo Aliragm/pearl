@@ -1,0 +1,10 @@
+ktor:
+  deployment:
+    port: 8080
+  application:
+    modules:
+      - gg.pearl.HttpKt.configureHttp
+      - gg.pearl.SerializationKt.configureSerialization
+      - gg.pearl.SecurityKt.configureSecurity
+      - gg.pearl.DIKt.configureDependencyInjection
+      - gg.pearl.RoutingKt.configureRouting

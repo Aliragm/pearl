@@ -1,0 +1,47 @@
+### Gradle ###
+.gradle/
+build/
+/build/
+**/build/
+.gradletasknamecache
+gradle-user-home/
+
+### Kotlin & Ktor ###
+.kotlin/
+.konan/
+bin/
+/out/
+*.class
+*.klib
+# Ktor specific logs if configured locally
+*.log
+scan-journal.log
+
+### IntelliJ IDEA / Android Studio ###
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+# Outcomment this if you want to share dictionaries or code styles
+#.idea/dictionaries/
+#.idea/codeStyles/
+
+### Visual Studio Code ###
+.vscode/
+
+### Secrets & Environment Configs (Crucial for Server Deployment) ###
+*.properties
+!gradle.properties
+# Ignore local environment variables and keystores
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+
+### OS Specific ###
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
