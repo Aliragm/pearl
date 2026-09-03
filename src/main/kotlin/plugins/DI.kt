@@ -1,4 +1,4 @@
-package gg.pearl
+package gg.pearl.plugins
 
 import io.ktor.server.application.*
 import io.ktor.server.plugins.di.*
@@ -6,6 +6,5 @@ import io.ktor.server.plugins.di.*
 // The contents of the `install` function will be used for the project template
 fun Application.configureDependencyInjection() {
     dependencies {
-        provide { GreetingService { "Hello, World!" } }
     }
 }
