@@ -23,16 +23,16 @@ scan-journal.log
 *.iws
 *.ipr
 .idea_modules/
-# Outcomment this if you want to share dictionaries or code styles
-#.idea/dictionaries/
-#.idea/codeStyles/
 
 ### Visual Studio Code ###
 .vscode/
 
-### Secrets & Environment Configs (Crucial for Server Deployment) ###
+### Secrets & Environment Configs ###
 *.properties
 !gradle.properties
+!gradle-wrapper.properties
+!**/gradle-wrapper.properties
+
 # Ignore local environment variables and keystores
 .env
 .env.*
