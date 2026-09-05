@@ -1,7 +1,6 @@
 package gg.pearl.repository
 
 import gg.pearl.model.User
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 class UserRepository {
@@ -53,10 +52,6 @@ class UserRepository {
     }
 
     fun deleteUser(user: User): Boolean {
-        return if(users.remove(user)){
-            true
-        } else{
-            false
-        }
+        return users.remove(user)
     }
 }

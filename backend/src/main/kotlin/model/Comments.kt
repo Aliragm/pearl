@@ -9,6 +9,7 @@ data class Comments (
     val userId: Uuid,
     val postId: Uuid,
     val content: String,
+    val isEdited: Boolean = false,
     val createdAt: Instant = Clock.System.now(),
     val updatedAt: Instant = Clock.System.now()
 )

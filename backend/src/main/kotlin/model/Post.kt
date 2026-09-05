@@ -12,4 +12,5 @@ data class Post (
     val content: String,
     val score: Double,
     val createdAt: Instant = Clock.System.now(),
+    val updatedAt: Instant = Clock.System.now()
 )
