@@ -1,40 +1,53 @@
-# pearl
+# Pearl.gg — Monorepo
 
-This project was created using the [Ktor Project Generator](https://start.ktor.io).
+Repositório unificado da plataforma **Pearl.gg**, desenvolvido como projeto integrado para as disciplinas:
+* **DIM0547 — Desenvolvimento de Sistemas Web II**
+* **DIM0524 — Desenvolvimento de Sistemas para Dispositivos Móveis**
 
-Here are some useful links to get you started:
- * [Ktor Documentation](https://ktor.io/docs/home.html)
- * [Ktor GitHub page](https://github.com/ktorio/ktor)
- * [Ktor Slack chat](https://app.slack.com/client/T09229ZC6/C0A974TJ9). [Request an invite](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up).
+---
 
+## 🏗️ Estrutura do Monorepo
 
-## Features
-Here's a list of features included in this project:
-
-| Name | Description |
-|------|-------------|
-| [Content Negotiation](https://start.ktor.io/p/io.ktor/server-content-negotiation) | Provides automatic content conversion according to Content-Type and Accept headers |
-| [Jackson](https://start.ktor.io/p/io.ktor/server-jackson) | Handles JSON serialization using Jackson library |
-| [Dependency Injection](https://start.ktor.io/p/io.ktor/server-di) | Enables dependency injection for your server |
-| [Authentication](https://start.ktor.io/p/io.ktor/server-auth) | Provides extension point for handling the Authorization header |
-| [Authentication JWT](https://start.ktor.io/p/io.ktor/server-auth-jwt) | Handles JSON Web Token (JWT) bearer authentication scheme |
-| [Default Headers](https://start.ktor.io/p/io.ktor/server-default-headers) | Adds a default set of headers to HTTP responses |
-| [Swagger](https://start.ktor.io/p/io.ktor/server-swagger) | Serves Swagger UI for your project |
-| [CORS](https://start.ktor.io/p/io.ktor/server-cors) | Enables Cross-Origin Resource Sharing (CORS) |
-
-
-## Building & Running
-To build or run the project, use one of the following tasks:
-
-
-| Task | Description |
-|------|-------------|
-| `./gradlew test`    | Run the tests     |
-| `./gradlew build`   | Build the project |
-| `./gradlew run`     | Run the server    |
-
-If the server starts successfully, you'll see the following output:
+```text
+pearlgg/
+├── docs/                        # Documentação da proposta (Sprint 0)
+│   └── proposta.md
+├── backend/                     # Serviço Principal em Kotlin / Ktor
+│   ├── src/
+│   └── build.gradle.kts
+├── services/                    # Microsserviços
+│   └── ingestor-go/             # Microsserviço de Ingestão e Cache em Go
+│       ├── go.mod
+│       ├── main.go
+│       └── main_test.go
+├── mobile/                      # Aplicativo Móvel (Kotlin Multiplatform / Compose)
+│   ├── src/
+│   │   ├── commonMain/          # Regras de negócio e UI compartilhadas (Android/iOS/Desktop)
+│   │   ├── androidMain/         # Específico Android
+│   │   ├── iosMain/             # Específico iOS
+│   │   └── desktopMain/         # Específico Desktop (Hot Reload)
+│   └── build.gradle.kts
+└── .github/
+    └── workflows/
+        └── ci.yml               # Pipeline de CI (GitHub Actions)
 ```
-2024-12-04 14:32:45.584 [main] INFO  Application - Application started in 0.303 seconds.
-2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
+
+---
+
+## 🚀 Como Executar
+
+### 1. Backend (Ktor)
+```bash
+./gradlew :backend:run
+```
+
+### 2. Testes de Todos os Módulos Gradle
+```bash
+./gradlew test
+```
+
+### 3. Microsserviço Go
+```bash
+cd services/ingestor-go
+go run main.go
 ```

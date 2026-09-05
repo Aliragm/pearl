@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -11,6 +12,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+        google()
         mavenCentral()
     }
     versionCatalogs {
@@ -18,5 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "pearl"
+rootProject.name = "pearlgg-monorepo"
 
+include(":backend")
+include(":mobile")

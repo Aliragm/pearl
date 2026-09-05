@@ -3,15 +3,18 @@
 ## 1. Visão do Produto
 
 * **Para:** entusiastas do mundo dos games
-* **Que:** querem realizar avaliações multiplataforma
-* **O Pearl.gg:** é uma rede social
-* **Que:** unifica avaliações de jogos
-* **Diferente de:** fóruns dispersos e das lojas individuais das plataformas
-* **Nosso produto:** padroniza critérios de avaliação de jogos e unifica em um só lugar diversas plataformas.
+* **Que:** querem registrar e consultar avaliações estruturadas de jogos de forma unificada
+* **O Pearl.gg:** é uma plataforma/rede social de avaliação de games
+* **Que:** padroniza critérios de análise e centraliza conteúdos de diversas plataformas em um único ecossistema
+* **Diferente de:** fóruns dispersos e lojas individuais de cada plataforma
+* **Nosso produto:** oferece critérios técnicos e subjetivos de avaliação com feedback visual marcante (estilo Letterboxd para jogos), integrado entre ambiente Web e aplicativo Mobile.
 
 ---
 
 ## 2. Definição do MVP
+
+### Hipótese de Valor
+*Acreditamos que os entusiastas de games vão centralizar e publicar suas avaliações no Pearl.gg porque terão um ambiente social padronizado e multiplataforma para compartilhar suas análises por critérios específicos, substituindo a fragmentação atual entre lojas e redes sociais genéricas.*
 
 ### Dentro do Escopo (In Scope)
 * **Perfis:** Criação e visualização de perfis de usuário e páginas dedicadas a jogos;
@@ -34,7 +37,7 @@
 
 ## 3. Link para Backlog Inicial
 
-* **GitHub Projects / Issues:** [Repositório GitHub](https://github.com/Aliragm/pearl/issues)
+* **GitHub Projects / Issues:** [Repositório GitHub (Pearl.gg Backlog)](https://github.com/Aliragm/pearl/issues)
 
 ---
 
@@ -49,7 +52,15 @@
 
 ---
 
-## 5. Decisão de Tecnologia do Serviço Principal: Kotlin com Ktor
+## 5. Plataforma-Alvo Móvel Escolhida: Compose Multiplatform (KMP - Android & iOS)
+
+* **Plataforma Escolhida:** **Kotlin Multiplatform (KMP) com Compose Multiplatform (Android & iOS + Desktop)**
+* **Justificativa:**  
+  A escolha por Compose Multiplatform (KMP) permite compartilhar a lógica de negócios e a camada de interface gráfica entre **Android** e **iOS** com código único em Kotlin. Além de atender nativamente a dispositivos móveis de ambas as plataformas (como smartphones Android e iOS), o alvo **Desktop** possibilita um ciclo de desenvolvimento e visualização com *Hot Reload* extremamente ágil. Essa abordagem maximiza o reaproveitamento de código e alinha-se perfeitamente com a stack do backend em Kotlin.
+
+---
+
+## 6. Decisão de Tecnologia do Serviço Principal: Kotlin com Ktor
 
 * **Decisão:** **Kotlin / Ktor**
 * **Justificativa:**  
@@ -58,7 +69,7 @@
 
 ---
 
-## 6. Divisão de Responsabilidades: Serviço Principal (Kotlin) vs. Microsserviço (Go)
+## 7. Divisão de Responsabilidades: Serviço Principal (Kotlin) vs. Microsserviço (Go)
 
 A arquitetura adota uma separação estrita entre o núcleo de regras de negócio/persistência relacional e os serviços orientados a alta concorrência e tarefas de I/O intensivo:
 
@@ -77,7 +88,7 @@ A arquitetura adota uma separação estrita entre o núcleo de regras de negóci
 
 ---
 
-## 7. Equipe
+## 8. Equipe
 
 | Nome                                 | Matrícula     | Papel / Responsabilidades |
 |:-------------------------------------|:--------------| :--- |
@@ -85,10 +96,8 @@ A arquitetura adota uma separação estrita entre o núcleo de regras de negóci
 
 ---
 
-## 8. Coorte de Apresentação e Integração Curricular
+## 9. Coorte de Apresentação e Integração Curricular
 
 * **Integração de Disciplinas:** Projeto integrado desenvolvido em conjunto para:
-    1. **Desenvolvimento de Sistemas Web II**
-    2. **Desenvolvimento de Sistemas para Dispositivos Móveis**
-
----
+    1. **Desenvolvimento de Sistemas Web II (DIM0547)**
+    2. **Desenvolvimento de Sistemas para Dispositivos Móveis (DIM0524)**
