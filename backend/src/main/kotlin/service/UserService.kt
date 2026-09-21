@@ -2,10 +2,10 @@ package gg.pearl.service
 
 import gg.pearl.dto.UserDTO
 import gg.pearl.model.User
-import gg.pearl.repository.UserRepository
+import gg.pearl.repository.UserRepositoryImpl
 
 class UserService {
-    private val userRepository = UserRepository()
+    private val userRepository = UserRepositoryImpl()
 
     fun getUsers(): MutableList<UserDTO>{
         //má implementação
