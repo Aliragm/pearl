@@ -5,6 +5,7 @@ ktor:
     modules:
       - gg.pearl.plugins.HttpKt.configureHttp
       - gg.pearl.plugins.SerializationKt.configureSerialization
+      - gg.pearl.plugins.DatabasesKt.configureDatabases
       - gg.pearl.plugins.SecurityKt.configureSecurity
       - gg.pearl.plugins.DIKt.configureDependencyInjection
       - gg.pearl.RoutingKt.configureRouting
@@ -17,3 +18,8 @@ ktor:
       - "http://0.0.0.0:8080/api"
     realm:
       - "Access to 'api'"
+
+database:
+  url: "$DB_URL:"
+  user: "$DB_USER:"
+  password: "$DB_PASSWORD:"

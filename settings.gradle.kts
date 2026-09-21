@@ -23,4 +23,6 @@ dependencyResolutionManagement {
 rootProject.name = "pearlgg-monorepo"
 
 include(":backend")
-include(":mobile")
+if (file("mobile/build.gradle.kts").exists()) {
+    include(":mobile")
+}
