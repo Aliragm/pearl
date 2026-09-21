@@ -4,9 +4,9 @@ import gg.pearl.model.Comments
 import kotlin.uuid.Uuid
 
 interface CommentsRepository {
-    fun getPostComments(postId: Uuid): List<Comments>
-    fun addComment(comment: Comments): Comments?
-    fun deleteComment(comment: Comments): Boolean
-    fun updateComment(comment: Comments): Comments?
-    fun getCommentById(id: Uuid): Comments?
+    suspend fun getPostComments(postId: Uuid): List<Comments>
+    suspend fun addComment(comment: Comments): Comments?
+    suspend fun deleteComment(comment: Comments): Boolean
+    suspend fun updateComment(comment: Comments): Comments?
+    suspend fun getCommentById(id: Uuid): Comments?
 }

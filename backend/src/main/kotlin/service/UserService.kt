@@ -7,13 +7,13 @@ import gg.pearl.repository.UserRepositoryImpl
 class UserService {
     private val userRepository = UserRepositoryImpl()
 
-    fun getUsers(): MutableList<UserDTO>{
+    suspend fun getUsers(): MutableList<UserDTO>{
         //má implementação
         val users = userRepository.getUsers()
         return users.mapTo(mutableListOf()) { convertUserToDTO(it) }
     }
 
-    fun createUser(user: UserDTO): UserDTO? {
+    suspend fun createUser(user: UserDTO): UserDTO? {
         val newUser = convertDTOToUser(user)
 
         val result = userRepository.createUser(newUser)
@@ -25,13 +25,13 @@ class UserService {
         }
     }
 
-    fun deleteUser(user: UserDTO): Boolean {
+    suspend fun deleteUser(user: UserDTO): Boolean {
         val deletedUser = convertDTOToUser(user)
 
         return userRepository.deleteUser(deletedUser)
     }
 
-    fun updateUser(user: UserDTO): UserDTO? {
+    suspend fun updateUser(user: UserDTO): UserDTO? {
         val oldUser = convertDTOToUser(user)
 
         val updatedUser = userRepository.updateUser(oldUser)
@@ -43,7 +43,7 @@ class UserService {
 
     }
 
-    fun getUserById(user: UserDTO): UserDTO? {
+    suspend fun getUserById(user: UserDTO): UserDTO? {
         return if(user.id != null){
             convertUserToDTO(userRepository.getUserById(user.id)!!)
         } else {

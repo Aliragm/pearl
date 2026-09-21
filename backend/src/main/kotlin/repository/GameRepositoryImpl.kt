@@ -8,11 +8,11 @@ class GameRepositoryImpl : GameRepository {
 
     private val games: MutableList<Game> = mutableListOf()
 
-    override fun getGames(): MutableList<Game> {
+    override suspend fun getGames(): MutableList<Game> {
         return games
     }
 
-    override fun createGame(game: Game): Game? {
+    override suspend fun createGame(game: Game): Game? {
         return if(games.add(game)){
             game
         } else {
@@ -20,7 +20,7 @@ class GameRepositoryImpl : GameRepository {
         }
     }
 
-    override fun updateGame(game: Game): Game? {
+    override suspend fun updateGame(game: Game): Game? {
         val oldGame = this.getGameById(game.id)
 
         if(oldGame != null) {
@@ -37,11 +37,11 @@ class GameRepositoryImpl : GameRepository {
         }
     }
 
-    override fun deleteGame(game: Game): Boolean {
+    override suspend fun deleteGame(game: Game): Boolean {
         return games.remove(game)
     }
 
-    override fun getGameById(id: Uuid): Game? {
+    override suspend fun getGameById(id: Uuid): Game? {
         return games.firstOrNull { it.id == id }
     }
 }

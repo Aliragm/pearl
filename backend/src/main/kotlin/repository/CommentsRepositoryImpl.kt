@@ -8,11 +8,11 @@ class CommentsRepositoryImpl : CommentsRepository {
 
     private val comments: MutableList<Comments> = mutableListOf()
 
-    override fun getPostComments(postId: Uuid): List<Comments>{
+    override suspend fun getPostComments(postId: Uuid): List<Comments>{
         return comments.filter { it.postId == postId }
     }
 
-    override fun addComment(comment: Comments): Comments? {
+    override suspend fun addComment(comment: Comments): Comments? {
         return if(comments.add(comment)){
             comment
         } else {
@@ -20,11 +20,11 @@ class CommentsRepositoryImpl : CommentsRepository {
         }
     }
 
-    override fun deleteComment(comment: Comments): Boolean{
+    override suspend fun deleteComment(comment: Comments): Boolean{
         return comments.remove(comment)
     }
 
-    override fun updateComment(comment: Comments): Comments? {
+    override suspend fun updateComment(comment: Comments): Comments? {
         val oldComment = this.getCommentById(comment.id)
 
         if(oldComment != null) {
@@ -41,7 +41,7 @@ class CommentsRepositoryImpl : CommentsRepository {
         }
     }
 
-    override fun getCommentById(id: Uuid): Comments? {
+    override suspend fun getCommentById(id: Uuid): Comments? {
         return comments.firstOrNull { it.id == id }
     }
 }

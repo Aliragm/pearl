@@ -4,10 +4,10 @@ import gg.pearl.model.Post
 import kotlin.uuid.Uuid
 
 interface PostRepository {
-    fun getPosts(): MutableList<Post>
-    fun createPost(post: Post): Post?
-    fun deletePost(post: Post): Boolean
-    fun updatePost(post: Post): Post?
-    fun getPostById(id: Uuid): Post?
-    fun getAllByUserId(id: Uuid): List<Post>
+    suspend fun getPosts(): MutableList<Post>
+    suspend fun createPost(post: Post): Post?
+    suspend fun deletePost(post: Post): Boolean
+    suspend fun updatePost(post: Post): Post?
+    suspend fun getPostById(id: Uuid): Post?
+    suspend fun getAllByUserId(id: Uuid): List<Post>
 }

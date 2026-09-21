@@ -7,27 +7,27 @@ class UserRepositoryImpl : UserRepository {
 
     private val users: MutableList<User> = mutableListOf()
 
-    override fun getUsers(): MutableList<User> {
+    override suspend fun getUsers(): MutableList<User> {
         return users
     }
 
-    override fun getUserById(id: Uuid): User? {
+    override suspend fun getUserById(id: Uuid): User? {
         return users.firstOrNull { it.id == id }
     }
 
-    override fun getUserByUsername(username: String): User? {
+    override suspend fun getUserByUsername(username: String): User? {
         return users.firstOrNull { it.name == username }
     }
 
-    override fun getUserByEmail(email: String): User? {
+    override suspend fun getUserByEmail(email: String): User? {
         return users.firstOrNull { it.email == email }
     }
 
-    override fun getUserByEmailAndPassword(email: String, password: String): User? {
+    override suspend fun getUserByEmailAndPassword(email: String, password: String): User? {
         return users.firstOrNull { it.email == email && it.password == password }
     }
 
-    override fun createUser(user: User): User? {
+    override suspend fun createUser(user: User): User? {
         return if(users.add(user)){
             user
         } else {
@@ -35,7 +35,7 @@ class UserRepositoryImpl : UserRepository {
         }
     }
 
-    override fun updateUser(user: User): User? {
+    override suspend fun updateUser(user: User): User? {
         val oldUser = this.getUserById(user.id)
 
         if(oldUser != null) {
@@ -51,7 +51,7 @@ class UserRepositoryImpl : UserRepository {
         }
     }
 
-    override fun deleteUser(user: User): Boolean {
+    override suspend fun deleteUser(user: User): Boolean {
         return users.remove(user)
     }
 }

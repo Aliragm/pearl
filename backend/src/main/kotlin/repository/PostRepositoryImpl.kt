@@ -8,11 +8,11 @@ class PostRepositoryImpl : PostRepository {
 
     private val posts: MutableList<Post> = mutableListOf()
 
-    override fun getPosts(): MutableList<Post> {
+    override suspend fun getPosts(): MutableList<Post> {
         return posts
     }
 
-    override fun createPost(post: Post): Post?{
+    override suspend fun createPost(post: Post): Post?{
         return if(posts.add(post)){
             post
         } else {
@@ -20,11 +20,11 @@ class PostRepositoryImpl : PostRepository {
         }
     }
 
-    override fun deletePost(post: Post): Boolean {
+    override suspend fun deletePost(post: Post): Boolean {
         return posts.remove(post)
     }
 
-    override fun updatePost(post: Post): Post? {
+    override suspend fun updatePost(post: Post): Post? {
         val oldPost = this.getPostById(post.id)
 
         if(oldPost != null) {
@@ -41,11 +41,11 @@ class PostRepositoryImpl : PostRepository {
         }
     }
 
-    override fun getPostById(id: Uuid): Post? {
+    override suspend fun getPostById(id: Uuid): Post? {
         return posts.firstOrNull { it.id == id }
     }
 
-    override fun getAllByUserId(id: Uuid): List<Post> {
+    override suspend fun getAllByUserId(id: Uuid): List<Post> {
         return posts.filter { it.userId == id }
     }
 }
