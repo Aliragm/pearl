@@ -2,58 +2,44 @@ package gg.pearl.service
 
 import gg.pearl.dto.UserDTO
 import gg.pearl.model.User
-import gg.pearl.repository.UserRepositoryImpl
+import gg.pearl.repository.UserRepository
+import kotlin.uuid.Uuid
 
-class UserService {
-    private val userRepository = UserRepositoryImpl()
+class UserService(
+    private val userRepository: UserRepository
+) {
 
-    suspend fun getUsers(): MutableList<UserDTO>{
-        //má implementação
-        val users = userRepository.getUsers()
-        return users.mapTo(mutableListOf()) { convertUserToDTO(it) }
+    suspend fun getUsers(): List<UserDTO> {
+        return userRepository.getUsers().map(::convertUserToDTO)
+    }
+
+    suspend fun getUserById(id: Uuid): UserDTO? {
+        return userRepository.getUserById(id)?.let(::convertUserToDTO)
     }
 
     suspend fun createUser(user: UserDTO): UserDTO? {
         val newUser = convertDTOToUser(user)
-
         val result = userRepository.createUser(newUser)
-
-        return if(result != null){
-            convertUserToDTO(result)
-        } else{
-            null
-        }
-    }
-
-    suspend fun deleteUser(user: UserDTO): Boolean {
-        val deletedUser = convertDTOToUser(user)
-
-        return userRepository.deleteUser(deletedUser)
+        return result?.let(::convertUserToDTO)
     }
 
     suspend fun updateUser(user: UserDTO): UserDTO? {
         val oldUser = convertDTOToUser(user)
-
         val updatedUser = userRepository.updateUser(oldUser)
-        return if(updatedUser != null){
-            convertUserToDTO(updatedUser)
-        } else{
-            null
-        }
-
+        return updatedUser?.let(::convertUserToDTO)
     }
 
-    suspend fun getUserById(user: UserDTO): UserDTO? {
-        return if(user.id != null){
-            convertUserToDTO(userRepository.getUserById(user.id)!!)
-        } else {
-            null
-        }
-
+    suspend fun deleteUser(id: Uuid): Boolean {
+        val existing = userRepository.getUserById(id) ?: return false
+        return userRepository.deleteUser(existing)
     }
 
     private fun convertDTOToUser(userDTO: UserDTO): User {
-        return User(name = userDTO.name, password = userDTO.password, email =  userDTO.email)
+        return if (userDTO.id != null) {
+            User(id = userDTO.id, name = userDTO.name, password = userDTO.password, email = userDTO.email)
+        } else {
+            User(name = userDTO.name, password = userDTO.password, email = userDTO.email)
+        }
     }
 
     private fun convertUserToDTO(user: User): UserDTO {
