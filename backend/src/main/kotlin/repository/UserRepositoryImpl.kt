@@ -1,5 +1,6 @@
 package gg.pearl.repository
 
+import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.model.User
 import gg.pearl.repository.tables.UserDAO
 import gg.pearl.repository.tables.UserTable
@@ -60,12 +61,11 @@ class UserRepositoryImpl : UserRepository {
         }
     }
 
-    override suspend fun updateUser(user: User): User? {
+    override suspend fun updateUser(id: Uuid, dto: UpdateUserDTO): User? {
         return withTransaction {
-            val entity = UserDAO.findById(user.id.toJavaUuid()) ?: return@withTransaction null
-            entity.name = user.name
-            entity.email = user.email
-            entity.password = user.password
+            val entity = UserDAO.findById(id.toJavaUuid()) ?: return@withTransaction null
+            dto.name?.let { entity.name = it }
+            dto.email?.let { entity.email = it }
             daoToModel(entity)
         }
     }

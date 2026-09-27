@@ -1,5 +1,6 @@
 package gg.pearl.service
 
+import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.dto.UserDTO
 import gg.pearl.model.User
 import gg.pearl.repository.UserRepository
@@ -23,9 +24,8 @@ class UserService(
         return result?.let(::convertUserToDTO)
     }
 
-    suspend fun updateUser(user: UserDTO): UserDTO? {
-        val oldUser = convertDTOToUser(user)
-        val updatedUser = userRepository.updateUser(oldUser)
+    suspend fun updateUser(id: Uuid, user: UpdateUserDTO): UserDTO? {
+        val updatedUser = userRepository.updateUser(id, user)
         return updatedUser?.let(::convertUserToDTO)
     }
 

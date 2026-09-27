@@ -1,5 +1,6 @@
 package gg.pearl.controller
 
+import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.dto.UserDTO
 import gg.pearl.service.UserService
 import io.ktor.http.HttpStatusCode
@@ -10,6 +11,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import kotlin.uuid.Uuid
@@ -52,6 +54,30 @@ fun Route.userController() {
                 call.respond(HttpStatusCode.Created, entity)
             } else {
                 call.respond(HttpStatusCode.BadRequest)
+            }
+        }
+
+        patch("/{id}") {
+            val idParam = call.parameters["id"]
+            if (idParam == null) {
+                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
+                return@patch
+            }
+
+            val uuid = try {
+                Uuid.parse(idParam)
+            } catch (e: IllegalArgumentException) {
+                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
+                return@patch
+            }
+
+            val request = call.receive<UpdateUserDTO>()
+
+            val entity: UserDTO? = userService.updateUser(uuid, request)
+            if (entity != null) {
+                call.respond(HttpStatusCode.OK, entity)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
             }
         }
 
