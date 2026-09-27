@@ -1,51 +1,67 @@
 package gg.pearl.repository
 
+import gg.pearl.dto.UpdatePostDTO
 import gg.pearl.model.Post
-import kotlin.time.Clock
+import gg.pearl.repository.tables.GameTable
+import gg.pearl.repository.tables.PostDAO
+import gg.pearl.repository.tables.PostTable
+import gg.pearl.repository.tables.UserTable
+import gg.pearl.repository.tables.daoToModel
+import gg.pearl.repository.tables.withTransaction
+import org.jetbrains.exposed.dao.id.EntityID
+import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
+@OptIn(ExperimentalUuidApi::class)
 class PostRepositoryImpl : PostRepository {
 
-    private val posts: MutableList<Post> = mutableListOf()
-
-    override suspend fun getPosts(): MutableList<Post> {
-        return posts
-    }
-
-    override suspend fun createPost(post: Post): Post?{
-        return if(posts.add(post)){
-            post
-        } else {
-            null
-        }
-    }
-
-    override suspend fun deletePost(post: Post): Boolean {
-        return posts.remove(post)
-    }
-
-    override suspend fun updatePost(post: Post): Post? {
-        val oldPost = this.getPostById(post.id)
-
-        if(oldPost != null) {
-            val newPost = Post(id = oldPost.id, userId = oldPost.userId, gameId = oldPost.gameId, title = post.title,
-                content = post.content, score = post.score, createdAt = oldPost.createdAt, updatedAt = Clock.System.now())
-            if(this.deletePost(oldPost)){
-                this.posts.add(newPost)
-                return newPost
-            } else {
-                return oldPost
-            }
-        } else {
-            return null
+    override suspend fun getPosts(): List<Post> {
+        return withTransaction {
+            PostDAO.all().map(::daoToModel)
         }
     }
 
     override suspend fun getPostById(id: Uuid): Post? {
-        return posts.firstOrNull { it.id == id }
+        return withTransaction {
+            PostDAO.findById(id.toJavaUuid())?.let(::daoToModel)
+        }
     }
 
-    override suspend fun getAllByUserId(id: Uuid): List<Post> {
-        return posts.filter { it.userId == id }
+    override suspend fun getAllByUserId(userId: Uuid): List<Post> {
+        return withTransaction {
+            PostDAO.find { PostTable.userId eq userId.toJavaUuid() }.map(::daoToModel)
+        }
+    }
+
+    override suspend fun createPost(post: Post): Post? {
+        return withTransaction {
+            val entity = PostDAO.new {
+                this.userId = EntityID(post.userId.toJavaUuid(), UserTable)
+                this.gameId = EntityID(post.gameId.toJavaUuid(), GameTable)
+                this.title = post.title
+                this.content = post.content
+                this.score = post.score
+            }
+            daoToModel(entity)
+        }
+    }
+
+    override suspend fun updatePost(id: Uuid, dto: UpdatePostDTO): Post? {
+        return withTransaction {
+            val entity = PostDAO.findById(id.toJavaUuid()) ?: return@withTransaction null
+            dto.title?.let { entity.title = it }
+            dto.content?.let { entity.content = it }
+            dto.score?.let { entity.score = it }
+            daoToModel(entity)
+        }
+    }
+
+    override suspend fun deletePost(id: Uuid): Boolean {
+        return withTransaction {
+            val entity = PostDAO.findById(id.toJavaUuid()) ?: return@withTransaction false
+            entity.delete()
+            true
+        }
     }
 }

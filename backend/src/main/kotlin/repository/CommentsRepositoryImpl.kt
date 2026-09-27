@@ -1,47 +1,61 @@
 package gg.pearl.repository
 
+import gg.pearl.dto.UpdateCommentDTO
 import gg.pearl.model.Comments
-import kotlin.time.Clock
+import gg.pearl.repository.tables.CommentsDAO
+import gg.pearl.repository.tables.CommentsTable
+import gg.pearl.repository.tables.PostTable
+import gg.pearl.repository.tables.UserTable
+import gg.pearl.repository.tables.daoToModel
+import gg.pearl.repository.tables.withTransaction
+import org.jetbrains.exposed.dao.id.EntityID
+import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
+@OptIn(ExperimentalUuidApi::class)
 class CommentsRepositoryImpl : CommentsRepository {
 
-    private val comments: MutableList<Comments> = mutableListOf()
-
-    override suspend fun getPostComments(postId: Uuid): List<Comments>{
-        return comments.filter { it.postId == postId }
-    }
-
-    override suspend fun addComment(comment: Comments): Comments? {
-        return if(comments.add(comment)){
-            comment
-        } else {
-            null
-        }
-    }
-
-    override suspend fun deleteComment(comment: Comments): Boolean{
-        return comments.remove(comment)
-    }
-
-    override suspend fun updateComment(comment: Comments): Comments? {
-        val oldComment = this.getCommentById(comment.id)
-
-        if(oldComment != null) {
-            val newComment = Comments(id = oldComment.id, userId = oldComment.userId, postId = oldComment.postId,
-                content = comment.content, isEdited = true, createdAt = oldComment.createdAt, updatedAt = Clock.System.now())
-            if(this.deleteComment(oldComment)){
-                this.comments.add(newComment)
-                return newComment
-            } else {
-                return oldComment
-            }
-        } else {
-            return null
+    override suspend fun getPostComments(postId: Uuid): List<Comments> {
+        return withTransaction {
+            CommentsDAO.find { CommentsTable.postId eq postId.toJavaUuid() }.map(::daoToModel)
         }
     }
 
     override suspend fun getCommentById(id: Uuid): Comments? {
-        return comments.firstOrNull { it.id == id }
+        return withTransaction {
+            CommentsDAO.findById(id.toJavaUuid())?.let(::daoToModel)
+        }
+    }
+
+    override suspend fun addComment(comment: Comments): Comments? {
+        return withTransaction {
+            val entity = CommentsDAO.new {
+                this.userId = EntityID(comment.userId.toJavaUuid(), UserTable)
+                this.postId = EntityID(comment.postId.toJavaUuid(), PostTable)
+                this.content = comment.content
+                this.isEdited = comment.isEdited
+            }
+            daoToModel(entity)
+        }
+    }
+
+    override suspend fun updateComment(id: Uuid, dto: UpdateCommentDTO): Comments? {
+        return withTransaction {
+            val entity = CommentsDAO.findById(id.toJavaUuid()) ?: return@withTransaction null
+            dto.content?.let {
+                entity.content = it
+                entity.isEdited = true
+            }
+            daoToModel(entity)
+        }
+    }
+
+    override suspend fun deleteComment(id: Uuid): Boolean {
+        return withTransaction {
+            val entity = CommentsDAO.findById(id.toJavaUuid()) ?: return@withTransaction false
+            entity.delete()
+            true
+        }
     }
 }

@@ -1,23 +1,761 @@
 openapi: "3.0.3"
 info:
-  title: "Application API"
-  description: "Application API"
+  title: "Pearl.gg API"
+  description: "RESTful API documentation for Pearl backend services, including Users, Games, Posts, Comments, and Follows."
   version: "1.0.0"
 servers:
-  - url: "http://0.0.0.0:8080"
+  - url: "http://localhost:8080"
+    description: "Local development server"
+
+tags:
+  - name: "General"
+    description: "System health and general endpoints"
+  - name: "Users"
+    description: "User management and profile operations"
+  - name: "Games"
+    description: "Game catalog and platform metadata"
+  - name: "Posts"
+    description: "User reviews and community posts"
+  - name: "Comments"
+    description: "Post comments and discussions"
+  - name: "Follows"
+    description: "Social graph and user follow relationships"
+
 paths:
   /:
     get:
-      description: "Hello World!"
+      tags:
+        - "General"
+      summary: "Health check"
+      description: "Returns greeting message confirming server status"
       responses:
         "200":
-          description: "OK"
+          description: "Server is running"
           content:
             text/plain:
               schema:
                 type: "string"
-              examples:
-                Example#1:
-                  value: "Hello World!"
+              example: "Hello World!"
+
+  /users:
+    get:
+      tags:
+        - "Users"
+      summary: "List all users"
+      responses:
+        "200":
+          description: "List of users"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/UserDTO"
+    post:
+      tags:
+        - "Users"
+      summary: "Create a user"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDTO"
+      responses:
+        "201":
+          description: "User created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: "Invalid request payload"
+
+  /users/{id}:
+    get:
+      tags:
+        - "Users"
+      summary: "Get user by ID"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "User found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "User not found"
+    patch:
+      tags:
+        - "Users"
+      summary: "Partially update user"
+      description: "Updates only the supplied fields (e.g. name or email) without requiring password"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDTO"
+      responses:
+        "200":
+          description: "User updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: "Invalid UUID format or bad input"
+        "404":
+          description: "User not found"
+    delete:
+      tags:
+        - "Users"
+      summary: "Delete user"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "204":
+          description: "User deleted successfully"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "User not found"
+
+  /games:
+    get:
+      tags:
+        - "Games"
+      summary: "List all games"
+      responses:
+        "200":
+          description: "List of games"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/GameDTO"
+    post:
+      tags:
+        - "Games"
+      summary: "Create a game"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameDTO"
+      responses:
+        "201":
+          description: "Game created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameDTO"
+        "400":
+          description: "Invalid request payload"
+
+  /games/{id}:
+    get:
+      tags:
+        - "Games"
+      summary: "Get game by ID"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Game found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameDTO"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Game not found"
+    patch:
+      tags:
+        - "Games"
+      summary: "Partially update game"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGameDTO"
+      responses:
+        "200":
+          description: "Game updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameDTO"
+        "400":
+          description: "Invalid UUID format or bad input"
+        "404":
+          description: "Game not found"
+    delete:
+      tags:
+        - "Games"
+      summary: "Delete game"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "204":
+          description: "Game deleted successfully"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Game not found"
+
+  /posts:
+    get:
+      tags:
+        - "Posts"
+      summary: "List all posts"
+      responses:
+        "200":
+          description: "List of posts"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/PostDTO"
+    post:
+      tags:
+        - "Posts"
+      summary: "Create a post"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDTO"
+      responses:
+        "201":
+          description: "Post created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDTO"
+        "400":
+          description: "Invalid request payload"
+
+  /posts/{id}:
+    get:
+      tags:
+        - "Posts"
+      summary: "Get post by ID"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Post found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDTO"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Post not found"
+    patch:
+      tags:
+        - "Posts"
+      summary: "Partially update post"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePostDTO"
+      responses:
+        "200":
+          description: "Post updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDTO"
+        "400":
+          description: "Invalid UUID format or bad input"
+        "404":
+          description: "Post not found"
+    delete:
+      tags:
+        - "Posts"
+      summary: "Delete post"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "204":
+          description: "Post deleted successfully"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Post not found"
+
+  /posts/user/{userId}:
+    get:
+      tags:
+        - "Posts"
+      summary: "List posts by user"
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "List of posts by user"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/PostDTO"
+        "400":
+          description: "Invalid UUID format"
+
+  /comments:
+    post:
+      tags:
+        - "Comments"
+      summary: "Create a comment"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentsDTO"
+      responses:
+        "201":
+          description: "Comment created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentsDTO"
+        "400":
+          description: "Invalid request payload"
+
+  /comments/{id}:
+    get:
+      tags:
+        - "Comments"
+      summary: "Get comment by ID"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Comment found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentsDTO"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Comment not found"
+    patch:
+      tags:
+        - "Comments"
+      summary: "Partially update comment"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCommentDTO"
+      responses:
+        "200":
+          description: "Comment updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentsDTO"
+        "400":
+          description: "Invalid UUID format or bad input"
+        "404":
+          description: "Comment not found"
+    delete:
+      tags:
+        - "Comments"
+      summary: "Delete comment"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "204":
+          description: "Comment deleted successfully"
+        "400":
+          description: "Invalid UUID format"
+        "404":
+          description: "Comment not found"
+
+  /comments/post/{postId}:
+    get:
+      tags:
+        - "Comments"
+      summary: "List comments of a post"
+      parameters:
+        - name: "postId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "List of comments"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/CommentsDTO"
+        "400":
+          description: "Invalid UUID format"
+
+  /follows:
+    post:
+      tags:
+        - "Follows"
+      summary: "Follow a user"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowsDTO"
+      responses:
+        "201":
+          description: "Follow created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowsDTO"
+        "400":
+          description: "Bad request"
+    delete:
+      tags:
+        - "Follows"
+      summary: "Unfollow a user"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowsDTO"
+      responses:
+        "204":
+          description: "Unfollowed successfully"
+        "404":
+          description: "Follow relationship not found"
+
+  /follows/followers/{userId}:
+    get:
+      tags:
+        - "Follows"
+      summary: "List followers of a user"
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "List of followers"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/FollowsDTO"
+        "400":
+          description: "Invalid UUID format"
+
+  /follows/following/{userId}:
+    get:
+      tags:
+        - "Follows"
+      summary: "List users followed by a user"
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "List of followings"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/FollowsDTO"
+        "400":
+          description: "Invalid UUID format"
+
 components:
-  schemas: {}
+  schemas:
+    Platform:
+      type: "string"
+      enum:
+        - "PLAYSTATION"
+        - "XBOX"
+        - "PC"
+        - "NINTENDO"
+
+    UserDTO:
+      type: "object"
+      required:
+        - "name"
+        - "email"
+        - "password"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+          readOnly: true
+          example: "7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
+        name:
+          type: "string"
+          example: "Alex Mercer"
+        email:
+          type: "string"
+          format: "email"
+          example: "alex@pearl.gg"
+        password:
+          type: "string"
+          format: "password"
+          example: "SuperSecret123!"
+
+    UpdateUserDTO:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Alex Mercer Updated"
+        email:
+          type: "string"
+          format: "email"
+          example: "alex.new@pearl.gg"
+
+    GameDTO:
+      type: "object"
+      required:
+        - "name"
+        - "developer"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+          readOnly: true
+          example: "2a52efc1-7fbd-46ce-bc5c-59fba11b8162"
+        name:
+          type: "string"
+          example: "Hollow Knight: Silksong"
+        developer:
+          type: "string"
+          example: "Team Cherry"
+        meanScore:
+          type: "number"
+          format: "double"
+          example: 9.8
+        platform:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Platform"
+          example: ["PC", "NINTENDO", "PLAYSTATION", "XBOX"]
+
+    UpdateGameDTO:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Hollow Knight: Silksong (GOTY Edition)"
+        developer:
+          type: "string"
+          example: "Team Cherry"
+        meanScore:
+          type: "number"
+          format: "double"
+          example: 9.9
+        platform:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Platform"
+
+    PostDTO:
+      type: "object"
+      required:
+        - "userId"
+        - "gameId"
+        - "title"
+        - "content"
+        - "score"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+          readOnly: true
+          example: "3bb62c72-c5eb-42d4-ba7e-7a5f2ec3d50f"
+        userId:
+          type: "string"
+          format: "uuid"
+          example: "7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
+        gameId:
+          type: "string"
+          format: "uuid"
+          example: "2a52efc1-7fbd-46ce-bc5c-59fba11b8162"
+        title:
+          type: "string"
+          example: "A Masterpiece of Metroidvania"
+        content:
+          type: "string"
+          example: "The combat and exploration improve upon the original in every conceivable way."
+        score:
+          type: "number"
+          format: "double"
+          example: 10.0
+
+    UpdatePostDTO:
+      type: "object"
+      properties:
+        title:
+          type: "string"
+          example: "Updated Review: A Masterpiece"
+        content:
+          type: "string"
+          example: "Revised after 100 hours of gameplay: still fantastic."
+        score:
+          type: "number"
+          format: "double"
+          example: 9.5
+
+    CommentsDTO:
+      type: "object"
+      required:
+        - "userId"
+        - "postId"
+        - "content"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+          readOnly: true
+          example: "4cc98d24-34e8-466d-a602-0e9e1cfa281b"
+        userId:
+          type: "string"
+          format: "uuid"
+          example: "7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
+        postId:
+          type: "string"
+          format: "uuid"
+          example: "3bb62c72-c5eb-42d4-ba7e-7a5f2ec3d50f"
+        content:
+          type: "string"
+          example: "Completely agree with this review!"
+        isEdited:
+          type: "boolean"
+          readOnly: true
+          example: false
+
+    UpdateCommentDTO:
+      type: "object"
+      properties:
+        content:
+          type: "string"
+          example: "Edited comment: Absolutely agree with this!"
+
+    FollowsDTO:
+      type: "object"
+      required:
+        - "userFollowingId"
+        - "userFollowerId"
+      properties:
+        userFollowingId:
+          type: "string"
+          format: "uuid"
+          example: "7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
+        userFollowerId:
+          type: "string"
+          format: "uuid"
+          example: "8ff2467e-f304-4c2e-bd9d-310c01cf4e8a"
