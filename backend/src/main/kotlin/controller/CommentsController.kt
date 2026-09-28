@@ -2,6 +2,10 @@ package gg.pearl.controller
 
 import gg.pearl.dto.CommentsDTO
 import gg.pearl.dto.UpdateCommentDTO
+import gg.pearl.exceptions.BadRequestException
+import gg.pearl.exceptions.InvalidUuidException
+import gg.pearl.exceptions.MissingIdException
+import gg.pearl.exceptions.NotFoundException
 import gg.pearl.service.CommentsService
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -23,39 +27,24 @@ fun Route.commentsController() {
 
     route("/comments") {
         get("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@get
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The comment id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The comment UUID format is invalid.")
             }
 
             val comment = commentsService.getCommentById(uuid)
-            if (comment != null) {
-                call.respond(HttpStatusCode.OK, comment)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Comment with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, comment)
         }
 
         get("/post/{postId}") {
-            val postIdParam = call.parameters["postId"]
-            if (postIdParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing postId parameter")
-                return@get
-            }
-
+            val postIdParam = call.parameters["postId"] ?: throw MissingIdException("The comment post id parameter is required.")
             val postUuid = try {
                 Uuid.parse(postIdParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The comment post UUID format is invalid.")
             }
 
             val userId = call.request.queryParameters["userId"]?.let {
@@ -79,57 +68,38 @@ fun Route.commentsController() {
         post {
             val request = call.receive<CommentsDTO>()
             val created = commentsService.createComment(request)
-            if (created != null) {
-                call.response.header(HttpHeaders.Location, "/comments/${created.id}")
-                call.respond(HttpStatusCode.Created, created)
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
-            }
+                ?: throw BadRequestException("Could not create comment")
+            call.response.header(HttpHeaders.Location, "/comments/${created.id}")
+            call.respond(HttpStatusCode.Created, created)
         }
 
         patch("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@patch
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The comment id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@patch
+                throw InvalidUuidException("The comment UUID format is invalid.")
             }
 
             val request = call.receive<UpdateCommentDTO>()
             val updated = commentsService.updateComment(uuid, request)
-            if (updated != null) {
-                call.respond(HttpStatusCode.OK, updated)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Comment with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@delete
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The comment id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@delete
+                throw InvalidUuidException("The comment UUID format is invalid.")
             }
 
             val deleted = commentsService.deleteComment(uuid)
-            if (deleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+            if (!deleted) {
+                throw NotFoundException("Comment with id $uuid was not found.")
             }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

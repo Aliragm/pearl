@@ -2,6 +2,10 @@ package gg.pearl.controller
 
 import gg.pearl.dto.GameDTO
 import gg.pearl.dto.UpdateGameDTO
+import gg.pearl.exceptions.BadRequestException
+import gg.pearl.exceptions.InvalidUuidException
+import gg.pearl.exceptions.MissingIdException
+import gg.pearl.exceptions.NotFoundException
 import gg.pearl.model.enums.Platform
 import gg.pearl.service.GameService
 import io.ktor.http.HttpHeaders
@@ -51,81 +55,53 @@ fun Route.gameController() {
         }
 
         get("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@get
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The game id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The game UUID format is invalid.")
             }
 
             val game = gameService.getGameById(uuid)
-            if (game != null) {
-                call.respond(HttpStatusCode.OK, game)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Game with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, game)
         }
 
         post {
             val request = call.receive<GameDTO>()
             val created = gameService.createGame(request)
-            if (created != null) {
-                call.response.header(HttpHeaders.Location, "/games/${created.id}")
-                call.respond(HttpStatusCode.Created, created)
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
-            }
+                ?: throw BadRequestException("Could not create game")
+            call.response.header(HttpHeaders.Location, "/games/${created.id}")
+            call.respond(HttpStatusCode.Created, created)
         }
 
         patch("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@patch
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The game id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@patch
+                throw InvalidUuidException("The game UUID format is invalid.")
             }
 
             val request = call.receive<UpdateGameDTO>()
             val updated = gameService.updateGame(uuid, request)
-            if (updated != null) {
-                call.respond(HttpStatusCode.OK, updated)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Game with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@delete
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The game id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@delete
+                throw InvalidUuidException("The game UUID format is invalid.")
             }
 
             val deleted = gameService.deleteGame(uuid)
-            if (deleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+            if (!deleted) {
+                throw NotFoundException("Game with id $uuid was not found.")
             }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

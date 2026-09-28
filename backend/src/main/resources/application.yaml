@@ -6,6 +6,7 @@ ktor:
       - gg.pearl.plugins.HttpKt.configureHttp
       - gg.pearl.plugins.DIKt.configureDependencyInjection
       - gg.pearl.plugins.SerializationKt.configureSerialization
+      - gg.pearl.plugins.StatusPagesKt.configureStatusPages
       - gg.pearl.plugins.DatabasesKt.configureDatabases
       - gg.pearl.plugins.SecurityKt.configureSecurity
       - gg.pearl.RoutingKt.configureRouting

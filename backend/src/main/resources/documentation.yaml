@@ -1072,3 +1072,27 @@ components:
         totalPages:
           type: "integer"
           example: 2
+
+    ProblemDetails:
+      type: "object"
+      required:
+        - "type"
+        - "title"
+        - "status"
+        - "detail"
+      properties:
+        type:
+          type: "string"
+          example: "https://pearl.com/exceptions/InvalidUuidException"
+        title:
+          type: "string"
+          example: "Invalid UUID format"
+        status:
+          type: "integer"
+          example: 400
+        detail:
+          type: "string"
+          example: "The UUID format is invalid."
+        instance:
+          type: "string"
+          example: "/comments/abc"

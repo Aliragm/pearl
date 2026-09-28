@@ -2,6 +2,11 @@ package gg.pearl.controller
 
 import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.dto.UserDTO
+import gg.pearl.exceptions.BadRequestException
+import gg.pearl.exceptions.ConflictException
+import gg.pearl.exceptions.InvalidUuidException
+import gg.pearl.exceptions.MissingIdException
+import gg.pearl.exceptions.NotFoundException
 import gg.pearl.service.UserService
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -34,25 +39,16 @@ fun Route.userController() {
         }
 
         get("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@get
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The user id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val user = userService.getUserById(uuid)
-            if (user != null) {
-                call.respond(HttpStatusCode.OK, user)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("User with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, user)
         }
 
         post {
@@ -60,63 +56,42 @@ fun Route.userController() {
 
             val existing = userService.getUserByEmail(request.email)
             if (existing != null) {
-                call.respond(HttpStatusCode.Conflict, "User with this email already exists")
-                return@post
+                throw ConflictException("User with email '${request.email}' already exists.")
             }
 
-            val entity: UserDTO? = userService.createUser(request)
-            if (entity != null) {
-                call.response.header(HttpHeaders.Location, "/users/${entity.id}")
-                call.respond(HttpStatusCode.Created, entity)
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
-            }
+            val entity: UserDTO = userService.createUser(request)
+                ?: throw BadRequestException("Could not create user")
+            call.response.header(HttpHeaders.Location, "/users/${entity.id}")
+            call.respond(HttpStatusCode.Created, entity)
         }
 
         patch("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@patch
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The user id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@patch
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val request = call.receive<UpdateUserDTO>()
-
-            val entity: UserDTO? = userService.updateUser(uuid, request)
-            if (entity != null) {
-                call.respond(HttpStatusCode.OK, entity)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+            val entity: UserDTO = userService.updateUser(uuid, request)
+                ?: throw NotFoundException("User with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, entity)
         }
 
         delete("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@delete
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The user id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@delete
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val deleted = userService.deleteUser(uuid)
-            if (deleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+            if (!deleted) {
+                throw NotFoundException("User with id $uuid was not found.")
             }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

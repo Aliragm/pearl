@@ -1,6 +1,11 @@
 package gg.pearl.controller
 
 import gg.pearl.dto.FollowsDTO
+import gg.pearl.exceptions.BadRequestException
+import gg.pearl.exceptions.ConflictException
+import gg.pearl.exceptions.InvalidUuidException
+import gg.pearl.exceptions.MissingIdException
+import gg.pearl.exceptions.NotFoundException
 import gg.pearl.service.FollowsService
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -24,46 +29,34 @@ fun Route.followsController() {
             val request = call.receive<FollowsDTO>()
 
             if (request.userFollowingId == request.userFollowerId) {
-                call.respond(HttpStatusCode.BadRequest, "User cannot follow themselves")
-                return@post
+                throw BadRequestException("User cannot follow themselves")
             }
 
             if (followsService.isFollowing(request.userFollowingId, request.userFollowerId)) {
-                call.respond(HttpStatusCode.Conflict, "Already following this user")
-                return@post
+                throw ConflictException("Already following this user")
             }
 
             val created = followsService.createFollow(request)
-            if (created != null) {
-                call.response.header(HttpHeaders.Location, "/follows/following/${request.userFollowingId}")
-                call.respond(HttpStatusCode.Created, created)
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
-            }
+                ?: throw BadRequestException("Could not follow user")
+            call.response.header(HttpHeaders.Location, "/follows/following/${request.userFollowingId}")
+            call.respond(HttpStatusCode.Created, created)
         }
 
         delete {
             val request = call.receive<FollowsDTO>()
             val deleted = followsService.deleteFollow(request)
-            if (deleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+            if (!deleted) {
+                throw NotFoundException("Follow relationship was not found.")
             }
+            call.respond(HttpStatusCode.NoContent)
         }
 
         get("/followers/{userId}") {
-            val userIdParam = call.parameters["userId"]
-            if (userIdParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing userId parameter")
-                return@get
-            }
-
+            val userIdParam = call.parameters["userId"] ?: throw MissingIdException("The user id parameter is required.")
             val uuid = try {
                 Uuid.parse(userIdParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
@@ -75,17 +68,11 @@ fun Route.followsController() {
         }
 
         get("/following/{userId}") {
-            val userIdParam = call.parameters["userId"]
-            if (userIdParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing userId parameter")
-                return@get
-            }
-
+            val userIdParam = call.parameters["userId"] ?: throw MissingIdException("The user id parameter is required.")
             val uuid = try {
                 Uuid.parse(userIdParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1

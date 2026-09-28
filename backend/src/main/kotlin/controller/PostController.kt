@@ -2,6 +2,10 @@ package gg.pearl.controller
 
 import gg.pearl.dto.PostDTO
 import gg.pearl.dto.UpdatePostDTO
+import gg.pearl.exceptions.BadRequestException
+import gg.pearl.exceptions.InvalidUuidException
+import gg.pearl.exceptions.MissingIdException
+import gg.pearl.exceptions.NotFoundException
 import gg.pearl.service.PostService
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -47,39 +51,24 @@ fun Route.postController() {
         }
 
         get("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@get
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The post id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The post UUID format is invalid.")
             }
 
             val post = postService.getPostById(uuid)
-            if (post != null) {
-                call.respond(HttpStatusCode.OK, post)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Post with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, post)
         }
 
         get("/user/{userId}") {
-            val userIdParam = call.parameters["userId"]
-            if (userIdParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing userId parameter")
-                return@get
-            }
-
+            val userIdParam = call.parameters["userId"] ?: throw MissingIdException("The user id parameter is required.")
             val userUuid = try {
                 Uuid.parse(userIdParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@get
+                throw InvalidUuidException("The user UUID format is invalid.")
             }
 
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
@@ -93,57 +82,38 @@ fun Route.postController() {
         post {
             val request = call.receive<PostDTO>()
             val created = postService.createPost(request)
-            if (created != null) {
-                call.response.header(HttpHeaders.Location, "/posts/${created.id}")
-                call.respond(HttpStatusCode.Created, created)
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
-            }
+                ?: throw BadRequestException("Could not create post")
+            call.response.header(HttpHeaders.Location, "/posts/${created.id}")
+            call.respond(HttpStatusCode.Created, created)
         }
 
         patch("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@patch
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The post id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@patch
+                throw InvalidUuidException("The post UUID format is invalid.")
             }
 
             val request = call.receive<UpdatePostDTO>()
             val updated = postService.updatePost(uuid, request)
-            if (updated != null) {
-                call.respond(HttpStatusCode.OK, updated)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+                ?: throw NotFoundException("Post with id $uuid was not found.")
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val idParam = call.parameters["id"]
-            if (idParam == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing id parameter")
-                return@delete
-            }
-
+            val idParam = call.parameters["id"] ?: throw MissingIdException("The post id parameter is required.")
             val uuid = try {
                 Uuid.parse(idParam)
             } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid UUID format")
-                return@delete
+                throw InvalidUuidException("The post UUID format is invalid.")
             }
 
             val deleted = postService.deletePost(uuid)
-            if (deleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+            if (!deleted) {
+                throw NotFoundException("Post with id $uuid was not found.")
             }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }
