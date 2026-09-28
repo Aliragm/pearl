@@ -42,6 +42,8 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:$exposedVersion")
 
+    implementation("io.ktor:ktor-server-status-pages")
+
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }
