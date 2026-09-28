@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: "Pearl.gg API"
-  description: "RESTful API documentation for Pearl backend services, including Users, Games, Posts, Comments, and Follows."
+  description: "RESTful API documentation for Pearl backend services, including Users, Games, Posts, Comments, and Follows with pagination, filtering, and semantic HTTP status codes."
   version: "1.0.0"
 servers:
   - url: "http://localhost:8080"
@@ -11,11 +11,11 @@ tags:
   - name: "General"
     description: "System health and general endpoints"
   - name: "Users"
-    description: "User management and profile operations"
+    description: "User management, profile operations, and user listings"
   - name: "Games"
-    description: "Game catalog and platform metadata"
+    description: "Game catalog and platform metadata with filtering and pagination"
   - name: "Posts"
-    description: "User reviews and community posts"
+    description: "User reviews and community posts with pagination"
   - name: "Comments"
     description: "Post comments and discussions"
   - name: "Follows"
@@ -41,16 +41,46 @@ paths:
     get:
       tags:
         - "Users"
-      summary: "List all users"
+      summary: "List all users (paginated with filters)"
+      parameters:
+        - name: "name"
+          in: "query"
+          required: false
+          description: "Filter by substring in user name"
+          schema:
+            type: "string"
+        - name: "email"
+          in: "query"
+          required: false
+          description: "Filter by substring in email"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Page number (1-indexed, default: 1)"
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Page size (default: 10, max: 50)"
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
-          description: "List of users"
+          description: "Paginated list of users"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
+              description: "Total number of users matching filter"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/UserDTO"
+                $ref: "#/components/schemas/PageResponseUser"
     post:
       tags:
         - "Users"
@@ -64,12 +94,20 @@ paths:
       responses:
         "201":
           description: "User created successfully"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              description: "URI of the newly created user resource"
+              example: "/users/7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDTO"
         "400":
           description: "Invalid request payload"
+        "409":
+          description: "Conflict - user with this email already exists"
 
   /users/{id}:
     get:
@@ -146,16 +184,57 @@ paths:
     get:
       tags:
         - "Games"
-      summary: "List all games"
+      summary: "List all games (paginated with filters)"
+      parameters:
+        - name: "name"
+          in: "query"
+          required: false
+          description: "Filter by substring in game title"
+          schema:
+            type: "string"
+        - name: "developer"
+          in: "query"
+          required: false
+          description: "Filter by substring in developer name"
+          schema:
+            type: "string"
+        - name: "platform"
+          in: "query"
+          required: false
+          description: "Filter by supported platform"
+          schema:
+            $ref: "#/components/schemas/Platform"
+        - name: "minScore"
+          in: "query"
+          required: false
+          description: "Filter by minimum mean score"
+          schema:
+            type: "number"
+            format: "double"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
-          description: "List of games"
+          description: "Paginated list of games"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
+              description: "Total number of games matching criteria"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/GameDTO"
+                $ref: "#/components/schemas/PageResponseGame"
     post:
       tags:
         - "Games"
@@ -169,6 +248,12 @@ paths:
       responses:
         "201":
           description: "Game created successfully"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              description: "URI of the newly created game"
+              example: "/games/2a52efc1-7fbd-46ce-bc5c-59fba11b8162"
           content:
             application/json:
               schema:
@@ -250,16 +335,54 @@ paths:
     get:
       tags:
         - "Posts"
-      summary: "List all posts"
+      summary: "List all posts (paginated with filters)"
+      parameters:
+        - name: "title"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "userId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "gameId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "minScore"
+          in: "query"
+          required: false
+          schema:
+            type: "number"
+            format: "double"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
-          description: "List of posts"
+          description: "Paginated list of posts"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/PostDTO"
+                $ref: "#/components/schemas/PageResponsePost"
     post:
       tags:
         - "Posts"
@@ -273,6 +396,11 @@ paths:
       responses:
         "201":
           description: "Post created successfully"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              example: "/posts/3bb62c72-c5eb-42d4-ba7e-7a5f2ec3d50f"
           content:
             application/json:
               schema:
@@ -354,7 +482,7 @@ paths:
     get:
       tags:
         - "Posts"
-      summary: "List posts by user"
+      summary: "List posts by user (paginated)"
       parameters:
         - name: "userId"
           in: "path"
@@ -362,15 +490,29 @@ paths:
           schema:
             type: "string"
             format: "uuid"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
           description: "List of posts by user"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/PostDTO"
+                $ref: "#/components/schemas/PageResponsePost"
         "400":
           description: "Invalid UUID format"
 
@@ -388,6 +530,11 @@ paths:
       responses:
         "201":
           description: "Comment created successfully"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              example: "/comments/4cc98d24-34e8-466d-a602-0e9e1cfa281b"
           content:
             application/json:
               schema:
@@ -469,7 +616,7 @@ paths:
     get:
       tags:
         - "Comments"
-      summary: "List comments of a post"
+      summary: "List comments of a post (paginated with filters)"
       parameters:
         - name: "postId"
           in: "path"
@@ -477,15 +624,41 @@ paths:
           schema:
             type: "string"
             format: "uuid"
+        - name: "userId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "content"
+          in: "query"
+          required: false
+          description: "Filter comments containing substring"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
           description: "List of comments"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/CommentsDTO"
+                $ref: "#/components/schemas/PageResponseComments"
         "400":
           description: "Invalid UUID format"
 
@@ -503,12 +676,19 @@ paths:
       responses:
         "201":
           description: "Follow created successfully"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              example: "/follows/following/7ee1356d-e293-4b1d-ac8c-299b90be3d6f"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/FollowsDTO"
         "400":
-          description: "Bad request"
+          description: "Bad request - e.g. user cannot follow themselves"
+        "409":
+          description: "Conflict - user is already following this user"
     delete:
       tags:
         - "Follows"
@@ -529,7 +709,7 @@ paths:
     get:
       tags:
         - "Follows"
-      summary: "List followers of a user"
+      summary: "List followers of a user (paginated)"
       parameters:
         - name: "userId"
           in: "path"
@@ -537,15 +717,29 @@ paths:
           schema:
             type: "string"
             format: "uuid"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
           description: "List of followers"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/FollowsDTO"
+                $ref: "#/components/schemas/PageResponseFollows"
         "400":
           description: "Invalid UUID format"
 
@@ -553,7 +747,7 @@ paths:
     get:
       tags:
         - "Follows"
-      summary: "List users followed by a user"
+      summary: "List users followed by a user (paginated)"
       parameters:
         - name: "userId"
           in: "path"
@@ -561,15 +755,29 @@ paths:
           schema:
             type: "string"
             format: "uuid"
+        - name: "page"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            default: 10
       responses:
         "200":
           description: "List of followings"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/FollowsDTO"
+                $ref: "#/components/schemas/PageResponseFollows"
         "400":
           description: "Invalid UUID format"
 
@@ -618,6 +826,27 @@ components:
           format: "email"
           example: "alex.new@pearl.gg"
 
+    PageResponseUser:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/UserDTO"
+        page:
+          type: "integer"
+          example: 1
+        size:
+          type: "integer"
+          example: 10
+        total:
+          type: "integer"
+          format: "int64"
+          example: 42
+        totalPages:
+          type: "integer"
+          example: 5
+
     GameDTO:
       type: "object"
       required:
@@ -662,6 +891,27 @@ components:
           type: "array"
           items:
             $ref: "#/components/schemas/Platform"
+
+    PageResponseGame:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/GameDTO"
+        page:
+          type: "integer"
+          example: 1
+        size:
+          type: "integer"
+          example: 10
+        total:
+          type: "integer"
+          format: "int64"
+          example: 15
+        totalPages:
+          type: "integer"
+          example: 2
 
     PostDTO:
       type: "object"
@@ -710,6 +960,27 @@ components:
           format: "double"
           example: 9.5
 
+    PageResponsePost:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/PostDTO"
+        page:
+          type: "integer"
+          example: 1
+        size:
+          type: "integer"
+          example: 10
+        total:
+          type: "integer"
+          format: "int64"
+          example: 25
+        totalPages:
+          type: "integer"
+          example: 3
+
     CommentsDTO:
       type: "object"
       required:
@@ -745,6 +1016,27 @@ components:
           type: "string"
           example: "Edited comment: Absolutely agree with this!"
 
+    PageResponseComments:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CommentsDTO"
+        page:
+          type: "integer"
+          example: 1
+        size:
+          type: "integer"
+          example: 10
+        total:
+          type: "integer"
+          format: "int64"
+          example: 8
+        totalPages:
+          type: "integer"
+          example: 1
+
     FollowsDTO:
       type: "object"
       required:
@@ -759,3 +1051,24 @@ components:
           type: "string"
           format: "uuid"
           example: "8ff2467e-f304-4c2e-bd9d-310c01cf4e8a"
+
+    PageResponseFollows:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FollowsDTO"
+        page:
+          type: "integer"
+          example: 1
+        size:
+          type: "integer"
+          example: 10
+        total:
+          type: "integer"
+          format: "int64"
+          example: 12
+        totalPages:
+          type: "integer"
+          example: 2

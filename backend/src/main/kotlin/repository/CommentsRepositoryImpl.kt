@@ -9,6 +9,12 @@ import gg.pearl.repository.tables.UserTable
 import gg.pearl.repository.tables.daoToModel
 import gg.pearl.repository.tables.withTransaction
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.selectAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -16,9 +22,36 @@ import kotlin.uuid.toJavaUuid
 @OptIn(ExperimentalUuidApi::class)
 class CommentsRepositoryImpl : CommentsRepository {
 
-    override suspend fun getPostComments(postId: Uuid): List<Comments> {
+    override suspend fun getPostComments(
+        postId: Uuid,
+        userId: Uuid?,
+        content: String?,
+        page: Int,
+        size: Int
+    ): Pair<List<Comments>, Long> {
+        val safePage = page.coerceAtLeast(1)
+        val safeSize = size.coerceIn(1, 50)
+        val offset = ((safePage - 1).toLong() * safeSize)
+
         return withTransaction {
-            CommentsDAO.find { CommentsTable.postId eq postId.toJavaUuid() }.map(::daoToModel)
+            val conditions = mutableListOf<Op<Boolean>>()
+            conditions.add(CommentsTable.postId eq postId.toJavaUuid())
+
+            if (userId != null) {
+                conditions.add(CommentsTable.userId eq userId.toJavaUuid())
+            }
+            if (!content.isNullOrBlank()) {
+                conditions.add(CommentsTable.content.lowerCase() like "%${content.lowercase()}%")
+            }
+
+            val whereOp = conditions.reduce { acc, op -> acc and op }
+            val query = CommentsTable.selectAll().where { whereOp }
+
+            val total = query.count()
+            val comments = query.limit(safeSize).offset(offset).map { row ->
+                CommentsDAO.wrapRow(row).let(::daoToModel)
+            }
+            Pair(comments, total)
         }
     }
 

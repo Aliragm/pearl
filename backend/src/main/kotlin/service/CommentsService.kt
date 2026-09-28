@@ -1,6 +1,7 @@
 package gg.pearl.service
 
 import gg.pearl.dto.CommentsDTO
+import gg.pearl.dto.PageResponse
 import gg.pearl.dto.UpdateCommentDTO
 import gg.pearl.model.Comments
 import gg.pearl.repository.CommentsRepository
@@ -10,8 +11,20 @@ class CommentsService(
     private val commentsRepository: CommentsRepository
 ) {
 
-    suspend fun getPostComments(postId: Uuid): List<CommentsDTO> {
-        return commentsRepository.getPostComments(postId).map(::convertCommentToDTO)
+    suspend fun getPostComments(
+        postId: Uuid,
+        userId: Uuid? = null,
+        content: String? = null,
+        page: Int = 1,
+        size: Int = 10
+    ): PageResponse<CommentsDTO> {
+        val (comments, total) = commentsRepository.getPostComments(postId, userId, content, page, size)
+        return PageResponse(
+            items = comments.map(::convertCommentToDTO),
+            page = page.coerceAtLeast(1),
+            size = size.coerceIn(1, 50),
+            total = total
+        )
     }
 
     suspend fun getCommentById(id: Uuid): CommentsDTO? {

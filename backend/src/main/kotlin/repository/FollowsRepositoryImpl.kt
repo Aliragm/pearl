@@ -38,31 +38,55 @@ class FollowsRepositoryImpl : FollowsRepository {
         }
     }
 
-    override suspend fun getAllFollowers(userId: Uuid): List<Follows> {
+    override suspend fun isFollowing(userFollowingId: Uuid, userFollowerId: Uuid): Boolean {
         return withTransaction {
-            val javaUuid = userId.toJavaUuid()
-            FollowsTable.selectAll()
-                .where { FollowsTable.userFollowerId eq javaUuid }
-                .map { row ->
-                    Follows(
-                        userFollowingId = row[FollowsTable.userFollowingId].value.toKotlinUuid(),
-                        userFollowerId = row[FollowsTable.userFollowerId].value.toKotlinUuid()
-                    )
-                }
+            val query = FollowsTable.selectAll().where {
+                (FollowsTable.userFollowingId eq userFollowingId.toJavaUuid()) and
+                (FollowsTable.userFollowerId eq userFollowerId.toJavaUuid())
+            }
+            query.count() > 0
         }
     }
 
-    override suspend fun getAllFollowings(userId: Uuid): List<Follows> {
+    override suspend fun getAllFollowers(userId: Uuid, page: Int, size: Int): Pair<List<Follows>, Long> {
+        val safePage = page.coerceAtLeast(1)
+        val safeSize = size.coerceIn(1, 50)
+        val offset = ((safePage - 1).toLong() * safeSize)
+
         return withTransaction {
             val javaUuid = userId.toJavaUuid()
-            FollowsTable.selectAll()
+            val query = FollowsTable.selectAll()
+                .where { FollowsTable.userFollowerId eq javaUuid }
+
+            val total = query.count()
+            val follows = query.limit(safeSize).offset(offset).map { row ->
+                Follows(
+                    userFollowingId = row[FollowsTable.userFollowingId].value.toKotlinUuid(),
+                    userFollowerId = row[FollowsTable.userFollowerId].value.toKotlinUuid()
+                )
+            }
+            Pair(follows, total)
+        }
+    }
+
+    override suspend fun getAllFollowings(userId: Uuid, page: Int, size: Int): Pair<List<Follows>, Long> {
+        val safePage = page.coerceAtLeast(1)
+        val safeSize = size.coerceIn(1, 50)
+        val offset = ((safePage - 1).toLong() * safeSize)
+
+        return withTransaction {
+            val javaUuid = userId.toJavaUuid()
+            val query = FollowsTable.selectAll()
                 .where { FollowsTable.userFollowingId eq javaUuid }
-                .map { row ->
-                    Follows(
-                        userFollowingId = row[FollowsTable.userFollowingId].value.toKotlinUuid(),
-                        userFollowerId = row[FollowsTable.userFollowerId].value.toKotlinUuid()
-                    )
-                }
+
+            val total = query.count()
+            val follows = query.limit(safeSize).offset(offset).map { row ->
+                Follows(
+                    userFollowingId = row[FollowsTable.userFollowingId].value.toKotlinUuid(),
+                    userFollowerId = row[FollowsTable.userFollowerId].value.toKotlinUuid()
+                )
+            }
+            Pair(follows, total)
         }
     }
 }

@@ -3,9 +3,11 @@ package gg.pearl.controller
 import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.dto.UserDTO
 import gg.pearl.service.UserService
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.receive
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -21,7 +23,14 @@ fun Route.userController() {
 
     route("/users") {
         get {
-            call.respond(HttpStatusCode.OK, userService.getUsers())
+            val name = call.request.queryParameters["name"]
+            val email = call.request.queryParameters["email"]
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 10
+
+            val response = userService.getUsers(name = name, email = email, page = page, size = size)
+            call.response.header("X-Total-Count", response.total.toString())
+            call.respond(HttpStatusCode.OK, response)
         }
 
         get("/{id}") {
@@ -49,8 +58,15 @@ fun Route.userController() {
         post {
             val request = call.receive<UserDTO>()
 
+            val existing = userService.getUserByEmail(request.email)
+            if (existing != null) {
+                call.respond(HttpStatusCode.Conflict, "User with this email already exists")
+                return@post
+            }
+
             val entity: UserDTO? = userService.createUser(request)
             if (entity != null) {
+                call.response.header(HttpHeaders.Location, "/users/${entity.id}")
                 call.respond(HttpStatusCode.Created, entity)
             } else {
                 call.respond(HttpStatusCode.BadRequest)

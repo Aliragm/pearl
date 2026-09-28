@@ -1,5 +1,6 @@
 package gg.pearl.service
 
+import gg.pearl.dto.PageResponse
 import gg.pearl.dto.PostDTO
 import gg.pearl.dto.UpdatePostDTO
 import gg.pearl.model.Post
@@ -10,16 +11,35 @@ class PostService(
     private val postRepository: PostRepository
 ) {
 
-    suspend fun getPosts(): List<PostDTO> {
-        return postRepository.getPosts().map(::convertPostToDTO)
+    suspend fun getPosts(
+        title: String? = null,
+        userId: Uuid? = null,
+        gameId: Uuid? = null,
+        minScore: Double? = null,
+        page: Int = 1,
+        size: Int = 10
+    ): PageResponse<PostDTO> {
+        val (posts, total) = postRepository.getPosts(title, userId, gameId, minScore, page, size)
+        return PageResponse(
+            items = posts.map(::convertPostToDTO),
+            page = page.coerceAtLeast(1),
+            size = size.coerceIn(1, 50),
+            total = total
+        )
     }
 
     suspend fun getPostById(id: Uuid): PostDTO? {
         return postRepository.getPostById(id)?.let(::convertPostToDTO)
     }
 
-    suspend fun getPostsByUserId(userId: Uuid): List<PostDTO> {
-        return postRepository.getAllByUserId(userId).map(::convertPostToDTO)
+    suspend fun getPostsByUserId(userId: Uuid, page: Int = 1, size: Int = 10): PageResponse<PostDTO> {
+        val (posts, total) = postRepository.getAllByUserId(userId, page, size)
+        return PageResponse(
+            items = posts.map(::convertPostToDTO),
+            page = page.coerceAtLeast(1),
+            size = size.coerceIn(1, 50),
+            total = total
+        )
     }
 
     suspend fun createPost(post: PostDTO): PostDTO? {

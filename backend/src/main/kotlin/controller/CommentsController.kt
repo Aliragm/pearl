@@ -3,9 +3,11 @@ package gg.pearl.controller
 import gg.pearl.dto.CommentsDTO
 import gg.pearl.dto.UpdateCommentDTO
 import gg.pearl.service.CommentsService
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.di.dependencies
 import io.ktor.server.request.receive
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -56,13 +58,29 @@ fun Route.commentsController() {
                 return@get
             }
 
-            call.respond(HttpStatusCode.OK, commentsService.getPostComments(postUuid))
+            val userId = call.request.queryParameters["userId"]?.let {
+                try { Uuid.parse(it) } catch (e: Exception) { null }
+            }
+            val content = call.request.queryParameters["content"]
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 10
+
+            val response = commentsService.getPostComments(
+                postId = postUuid,
+                userId = userId,
+                content = content,
+                page = page,
+                size = size
+            )
+            call.response.header("X-Total-Count", response.total.toString())
+            call.respond(HttpStatusCode.OK, response)
         }
 
         post {
             val request = call.receive<CommentsDTO>()
             val created = commentsService.createComment(request)
             if (created != null) {
+                call.response.header(HttpHeaders.Location, "/comments/${created.id}")
                 call.respond(HttpStatusCode.Created, created)
             } else {
                 call.respond(HttpStatusCode.BadRequest)

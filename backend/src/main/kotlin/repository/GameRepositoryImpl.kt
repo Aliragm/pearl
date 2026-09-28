@@ -5,16 +5,24 @@ import gg.pearl.model.Game
 import gg.pearl.model.enums.Platform
 import gg.pearl.repository.tables.GameDAO
 import gg.pearl.repository.tables.GamePlatformsTable
+import gg.pearl.repository.tables.GameTable
 import gg.pearl.repository.tables.daoToModel
 import gg.pearl.repository.tables.withTransaction
+import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.selectAll
 import java.util.UUID
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 @OptIn(ExperimentalUuidApi::class)
 class GameRepositoryImpl : GameRepository {
@@ -26,11 +34,60 @@ class GameRepositoryImpl : GameRepository {
             .map { row -> Platform.valueOf(row[GamePlatformsTable.platform]) }
     }
 
-    override suspend fun getGames(): List<Game> {
+    override suspend fun getGames(
+        name: String?,
+        developer: String?,
+        platform: Platform?,
+        minScore: Double?,
+        page: Int,
+        size: Int
+    ): Pair<List<Game>, Long> {
+        val safePage = page.coerceAtLeast(1)
+        val safeSize = size.coerceIn(1, 50)
+        val offset = ((safePage - 1).toLong() * safeSize)
+
         return withTransaction {
-            GameDAO.all().map { dao ->
-                daoToModel(dao, loadPlatforms(dao.id.value))
+            val conditions = mutableListOf<Op<Boolean>>()
+            if (!name.isNullOrBlank()) {
+                conditions.add(GameTable.name.lowerCase() like "%${name.lowercase()}%")
             }
+            if (!developer.isNullOrBlank()) {
+                conditions.add(GameTable.developer.lowerCase() like "%${developer.lowercase()}%")
+            }
+            if (minScore != null) {
+                conditions.add(GameTable.meanScore greaterEq minScore)
+            }
+            if (platform != null) {
+                val matchingIds = GamePlatformsTable
+                    .selectAll()
+                    .where { GamePlatformsTable.platform eq platform.name }
+                    .map { it[GamePlatformsTable.gameId].value }
+
+                if (matchingIds.isEmpty()) {
+                    return@withTransaction Pair(emptyList(), 0L)
+                }
+                conditions.add(GameTable.id inList matchingIds)
+            }
+
+            val query = if (conditions.isNotEmpty()) {
+                val whereOp = conditions.reduce { acc, op -> acc and op }
+                GameTable.selectAll().where { whereOp }
+            } else {
+                GameTable.selectAll()
+            }
+
+            val total = query.count()
+            val games = query.limit(safeSize).offset(offset).map { row ->
+                val gameId = row[GameTable.id].value
+                Game(
+                    id = gameId.toKotlinUuid(),
+                    name = row[GameTable.name],
+                    developer = row[GameTable.developer],
+                    meanScore = row[GameTable.meanScore],
+                    platform = loadPlatforms(gameId) //olhar depois, pode dar problema
+                )
+            }
+            Pair(games, total)
         }
     }
 

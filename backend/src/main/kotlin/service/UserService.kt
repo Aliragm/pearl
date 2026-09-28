@@ -1,5 +1,6 @@
 package gg.pearl.service
 
+import gg.pearl.dto.PageResponse
 import gg.pearl.dto.UpdateUserDTO
 import gg.pearl.dto.UserDTO
 import gg.pearl.model.User
@@ -10,12 +11,22 @@ class UserService(
     private val userRepository: UserRepository
 ) {
 
-    suspend fun getUsers(): List<UserDTO> {
-        return userRepository.getUsers().map(::convertUserToDTO)
+    suspend fun getUsers(name: String? = null, email: String? = null, page: Int = 1, size: Int = 10): PageResponse<UserDTO> {
+        val (users, total) = userRepository.getUsers(name, email, page, size)
+        return PageResponse(
+            items = users.map(::convertUserToDTO),
+            page = page.coerceAtLeast(1),
+            size = size.coerceIn(1, 50),
+            total = total
+        )
     }
 
     suspend fun getUserById(id: Uuid): UserDTO? {
         return userRepository.getUserById(id)?.let(::convertUserToDTO)
+    }
+
+    suspend fun getUserByEmail(email: String): UserDTO? {
+        return userRepository.getUserByEmail(email)?.let(::convertUserToDTO)
     }
 
     suspend fun createUser(user: UserDTO): UserDTO? {

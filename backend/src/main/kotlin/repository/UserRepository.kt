@@ -5,7 +5,7 @@ import gg.pearl.model.User
 import kotlin.uuid.Uuid
 
 interface UserRepository {
-    suspend fun getUsers(): List<User>
+    suspend fun getUsers(name: String? = null, email: String? = null, page: Int = 1, size: Int = 10): Pair<List<User>, Long>
     suspend fun getUserById(id: Uuid): User?
     suspend fun getUserByUsername(username: String): User?
     suspend fun getUserByEmail(email: String): User?
