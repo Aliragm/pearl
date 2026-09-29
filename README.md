@@ -36,17 +36,25 @@ pearlgg/
 
 ## 🚀 Como Executar
 
-### 1. Backend (Ktor)
+### 1. Banco de Dados (PostgreSQL via Docker Compose)
+```bash
+docker compose up -d
+```
+> O container iniciará o PostgreSQL com as migrações versionadas via Flyway na inicialização do backend.
+
+### 2. Backend (Ktor)
 ```bash
 ./gradlew :backend:run
 ```
+> A API estará disponível em `http://localhost:8080`.
+> Documentação OpenAPI interativa (Swagger UI) disponível em `http://localhost:8080/swagger` e `http://localhost:8080/openapi`.
 
-### 2. Testes de Todos os Módulos Gradle
+### 3. Testes Automatizados (Unitários, StatusPages e Arquitetura Konsist)
 ```bash
 ./gradlew test
 ```
 
-### 3. Microsserviço Go
+### 4. Microsserviço Go
 ```bash
 cd services/ingestor-go
 go run main.go

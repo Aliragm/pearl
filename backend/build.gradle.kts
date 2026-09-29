@@ -44,6 +44,7 @@ dependencies {
 
     implementation("io.ktor:ktor-server-status-pages")
 
+    testImplementation("com.lemonappdev:konsist:0.17.3")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }
