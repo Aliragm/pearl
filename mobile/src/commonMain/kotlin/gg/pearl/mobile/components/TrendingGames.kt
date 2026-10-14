@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,21 +87,28 @@ fun TrendingGames(){
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = item.name,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip
-                )
-                Text(
-                    text = item.developer,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip
-                )
+                val info = carouselItemInfo
+                val focus = if (info.maxSize > info.minSize) {
+                    ((info.size - info.minSize) / (info.maxSize - info.minSize)).coerceIn(0f, 1f)
+                } else 1f
+                val captionAlpha = ((focus - 0.7f) / 0.3f).coerceIn(0f, 1f)
+                Column(modifier = Modifier.graphicsLayer { alpha = captionAlpha }) {
+                    Text(
+                        text = item.name,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = item.developer,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
