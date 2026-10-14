@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import gg.pearl.mobile.components.AppBar
+import gg.pearl.mobile.components.LastReviews
 import gg.pearl.mobile.components.TrendingGames
 
 @Composable
@@ -35,6 +36,9 @@ fun Menu(
         ) {
             item {
                 TrendingGames()
+            }
+            item {
+                LastReviews(onNavigateToProfile = onNavigateToProfile)
             }
         }
     }
