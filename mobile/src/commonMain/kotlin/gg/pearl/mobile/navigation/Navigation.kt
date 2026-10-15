@@ -16,6 +16,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import gg.pearl.mobile.screens.Menu
+import gg.pearl.mobile.screens.SearchScreen
 
 enum class Destination(
     val route: String,
@@ -55,8 +56,7 @@ fun AppNavHost(
             Menu(onNavigateToProfile = { navController.navigateToTab(Destination.PROFILE) })
         }
         composable(Destination.SEARCH.route) {
-            // TODO: trocar pela tela de pesquisa
-            Placeholder("Pesquisa")
+            SearchScreen()
         }
         composable(Destination.PROFILE.route) {
             // TODO: trocar pela tela de perfil
