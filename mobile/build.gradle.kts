@@ -43,6 +43,7 @@ kotlin {
             implementation(libs.logback.classic)
             implementation(libs.kotlinx.datetime)
             implementation(compose.materialIconsExtended)
+            implementation(libs.navigation.compose)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -22,7 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import gg.pearl.mobile.screens.Menu
+import gg.pearl.mobile.components.AppNavigationBar
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -32,5 +32,5 @@ import kotlin.time.Clock
 @Composable
 @Preview
 fun App() {
-    Menu {  }
+    AppNavigationBar()
 }

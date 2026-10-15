@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import gg.pearl.mobile.components.AppBar
 import gg.pearl.mobile.components.LastReviews
+import gg.pearl.mobile.components.TopTenMonth
 import gg.pearl.mobile.components.TrendingGames
 
 @Composable
@@ -39,6 +40,9 @@ fun Menu(
             }
             item {
                 LastReviews(onNavigateToProfile = onNavigateToProfile)
+            }
+            item {
+                TopTenMonth()
             }
         }
     }
