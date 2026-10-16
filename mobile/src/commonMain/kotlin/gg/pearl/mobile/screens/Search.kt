@@ -3,6 +3,7 @@ package gg.pearl.mobile.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -10,11 +11,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import gg.pearl.mobile.components.AppSearchBar
+import gg.pearl.mobile.components.FilterBar
 import gg.pearl.mobile.components.SearchCard
 import gg.pearl.mobile.mobile.generated.resources.Res
 import gg.pearl.mobile.mobile.generated.resources.gtavi
@@ -39,17 +44,35 @@ private val allGames = listOf(
     SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto VI", "Grand Theft Auto VI", "Rockstar Games", platform = "Xbox"),
     SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto VI", "Grand Theft Auto VI", "Rockstar Games", platform = "Nintendo"),
     SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto Seis", "Grand Theft Auto Seis", "Rockstar Games", platform = "PC"),
+    SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto VI", "Grand Theft Auto VI", "Rockstar Games", platform = "Playstation"),
+    SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto VI", "Grand Theft Auto VI", "Rockstar Games", platform = "Xbox"),
+    SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto VI", "Grand Theft Auto VI", "Rockstar Games", platform = "Nintendo"),
+    SearchCardData(Res.drawable.gtavi, "Capa de Grand Theft Auto Seis", "Grand Theft Auto Seis", "Rockstar Games", platform = "PC"),
+)
+
+// TODO: trocar pelas plataformas reais
+
+private val platforms = listOf(
+    "Playstation",
+    "Xbox",
+    "Pc",
+    "Nintendo",
 )
 
 private val SearchBarSpace: Dp = 80.dp
+private val FilterBarSpace: Dp = 56.dp
 
 @Composable
 fun SearchScreen() {
     val textFieldState = rememberTextFieldState()
     val query = textFieldState.text.toString()
 
-    val filteredGames = remember(query) {
-        if (query.isBlank()) allGames else allGames.filter { it.matches(query) }
+    var selectedPlatform by remember { mutableStateOf<String?>(null) }
+
+    val filteredGames = remember(query, selectedPlatform) {
+        allGames
+            .filter { query.isBlank() || it.matches(query) }
+            .filter { selectedPlatform == null || it.platform.equals(selectedPlatform, ignoreCase = true) }
     }
 
     val suggestions = remember(query) {
@@ -64,7 +87,7 @@ fun SearchScreen() {
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = SearchBarSpace,
+                top = SearchBarSpace + FilterBarSpace,
                 bottom = 16.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -80,6 +103,13 @@ fun SearchScreen() {
                 )
             }
         }
+
+        FilterBar(
+            platforms = platforms,
+            selectedPlatform = selectedPlatform,
+            onPlatformSelected = { selectedPlatform = it },
+            topInset = SearchBarSpace,
+        )
 
         AppSearchBar(
             textFieldState = textFieldState,
