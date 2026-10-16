@@ -13,14 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Barra de filtros por plataforma, com fundo opaco.
- *
- * O fundo começa no topo do componente e cobre também a área reservada para a
- * barra de pesquisa ([topInset]), evitando que o conteúdo role por trás dela.
- *
- * @param selectedPlatform plataforma selecionada, ou `null` para "Todos".
- */
 @Composable
 fun FilterBar(
     platforms: List<String>,
