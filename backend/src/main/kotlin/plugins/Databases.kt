@@ -29,6 +29,7 @@ fun Application.configureDatabases() {
             maximumPoolSize = 10
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+            addDataSourceProperty("stringtype", "unspecified")
             validate()
         }
         val dataSource = HikariDataSource(hikariConfig)

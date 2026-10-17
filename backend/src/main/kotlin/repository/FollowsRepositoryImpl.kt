@@ -5,10 +5,11 @@ import gg.pearl.repository.tables.FollowsTable
 import gg.pearl.repository.tables.UserTable
 import gg.pearl.repository.tables.withTransaction
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.selectAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -19,12 +20,16 @@ import kotlin.uuid.toKotlinUuid
 class FollowsRepositoryImpl : FollowsRepository {
 
     override suspend fun createFollow(follow: Follows): Follows? {
-        return withTransaction {
-            val inserted = FollowsTable.insert {
-                it[userFollowingId] = EntityID(follow.userFollowingId.toJavaUuid(), UserTable)
-                it[userFollowerId] = EntityID(follow.userFollowerId.toJavaUuid(), UserTable)
+        return try {
+            withTransaction {
+                val inserted = FollowsTable.insertIgnore {
+                    it[userFollowingId] = EntityID(follow.userFollowingId.toJavaUuid(), UserTable)
+                    it[userFollowerId] = EntityID(follow.userFollowerId.toJavaUuid(), UserTable)
+                }
+                if (inserted.insertedCount > 0) follow else null
             }
-            if (inserted.insertedCount > 0) follow else null
+        } catch (e: ExposedSQLException) {
+            null
         }
     }
 
