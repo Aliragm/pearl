@@ -1,47 +1,20 @@
 package gg.pearl.repository
 
+import gg.pearl.dto.UpdateCommentDTO
 import gg.pearl.model.Comments
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
-class CommentsRepository {
+interface CommentsRepository {
+    suspend fun getPostComments(
+        postId: Uuid,
+        userId: Uuid? = null,
+        content: String? = null,
+        page: Int = 1,
+        size: Int = 10
+    ): Pair<List<Comments>, Long>
 
-    private val comments: MutableList<Comments> = mutableListOf()
-
-    fun getPostComments(postId: Uuid): List<Comments>{
-        return comments.filter { it.postId == postId }
-    }
-
-    fun addComment(comment: Comments): Comments? {
-        return if(comments.add(comment)){
-            comment
-        } else {
-            null
-        }
-    }
-
-    fun deleteComment(comment: Comments): Boolean{
-        return comments.remove(comment)
-    }
-
-    fun updateComment(comment: Comments): Comments? {
-        val oldComment = this.getCommentById(comment.id)
-
-        if(oldComment != null) {
-            val newComment = Comments(id = oldComment.id, userId = oldComment.userId, postId = oldComment.postId,
-                content = comment.content, isEdited = true, createdAt = oldComment.createdAt, updatedAt = Clock.System.now())
-            if(this.deleteComment(oldComment)){
-                this.comments.add(newComment)
-                return newComment
-            } else {
-                return oldComment
-            }
-        } else {
-            return null
-        }
-    }
-
-    fun getCommentById(id: Uuid): Comments? {
-        return comments.firstOrNull { it.id == id }
-    }
+    suspend fun getCommentById(id: Uuid): Comments?
+    suspend fun addComment(comment: Comments): Comments?
+    suspend fun updateComment(id: Uuid, dto: UpdateCommentDTO): Comments?
+    suspend fun deleteComment(id: Uuid): Boolean
 }

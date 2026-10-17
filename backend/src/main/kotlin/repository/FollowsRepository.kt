@@ -1,29 +1,12 @@
 package gg.pearl.repository
 
 import gg.pearl.model.Follows
-import gg.pearl.model.User
+import kotlin.uuid.Uuid
 
-class FollowsRepository {
-
-    private val follows: MutableList<Follows> = mutableListOf()
-
-    fun createFollow(follow: Follows): Follows? {
-        return if(follows.add(follow)){
-            follow
-        } else {
-            null
-        }
-    }
-
-    fun deleteFollow(follow: Follows): Boolean {
-        return follows.remove(follow)
-    }
-
-    fun getAllFollowers(user: User): List<Follows> {
-        return follows.filter { it.userFollowingId == user.id }
-    }
-
-    fun getAllFollowings(user: User): List<Follows> {
-        return follows.filter { it.userFollowerId == user.id}
-    }
+interface FollowsRepository {
+    suspend fun createFollow(follow: Follows): Follows?
+    suspend fun deleteFollow(follow: Follows): Boolean
+    suspend fun isFollowing(userFollowingId: Uuid, userFollowerId: Uuid): Boolean
+    suspend fun getAllFollowers(userId: Uuid, page: Int = 1, size: Int = 10): Pair<List<Follows>, Long>
+    suspend fun getAllFollowings(userId: Uuid, page: Int = 1, size: Int = 10): Pair<List<Follows>, Long>
 }

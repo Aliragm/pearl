@@ -1,47 +1,22 @@
 package gg.pearl.repository
 
+import gg.pearl.dto.UpdateGameDTO
 import gg.pearl.model.Game
-import kotlin.time.Clock
+import gg.pearl.model.enums.Platform
 import kotlin.uuid.Uuid
 
-class GameRepository {
+interface GameRepository {
+    suspend fun getGames(
+        name: String? = null,
+        developer: String? = null,
+        platform: Platform? = null,
+        minScore: Double? = null,
+        page: Int = 1,
+        size: Int = 10
+    ): Pair<List<Game>, Long>
 
-    private val games: MutableList<Game> = mutableListOf()
-
-    fun getGames(): MutableList<Game> {
-        return games
-    }
-
-    fun createGame(game: Game): Game? {
-        return if(games.add(game)){
-            game
-        } else {
-            null
-        }
-    }
-
-    fun updateGame(game: Game): Game? {
-        val oldGame = this.getGameById(game.id)
-
-        if(oldGame != null) {
-            val newGame = Game(id = oldGame.id, platform = game.platform, name = game.name, developer = game.developer,
-                meanScore = game.meanScore, createdAt = oldGame.createdAt, updatedAt = Clock.System.now())
-            if(this.deleteGame(oldGame)){
-                this.games.add(newGame)
-                return newGame
-            } else {
-                return oldGame
-            }
-        } else {
-            return null
-        }
-    }
-
-    fun deleteGame(game: Game): Boolean {
-        return games.remove(game)
-    }
-
-    fun getGameById(id: Uuid): Game? {
-        return games.firstOrNull { it.id == id }
-    }
+    suspend fun getGameById(id: Uuid): Game?
+    suspend fun createGame(game: Game): Game?
+    suspend fun updateGame(id: Uuid, dto: UpdateGameDTO): Game?
+    suspend fun deleteGame(id: Uuid): Boolean
 }

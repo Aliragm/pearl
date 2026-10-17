@@ -29,6 +29,24 @@ dependencies {
     implementation(ktorLibs.server.swagger)
     implementation(libs.logback.classic)
 
+    // Database & Migrations
+    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("com.zaxxer:HikariCP:6.2.0")
+    implementation("org.flywaydb:flyway-core:11.3.4")
+    implementation("org.flywaydb:flyway-database-postgresql:11.3.4")
+
+    // Exposed ORM
+    val exposedVersion = "0.59.0"
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:$exposedVersion")
+
+    implementation("io.ktor:ktor-server-status-pages")
+
+    testImplementation("com.lemonappdev:konsist:0.17.3")
+    testImplementation("org.testcontainers:postgresql:1.20.4")
+    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }
