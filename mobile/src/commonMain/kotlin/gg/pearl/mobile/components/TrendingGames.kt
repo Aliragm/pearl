@@ -1,6 +1,7 @@
 package gg.pearl.mobile.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,54 +20,50 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import gg.pearl.mobile.mobile.generated.resources.Res
-import gg.pearl.mobile.mobile.generated.resources.gtavi
-import org.jetbrains.compose.resources.DrawableResource
+import gg.pearl.mobile.model.GameUiModel
+import gg.pearl.mobile.model.MockGames
 import org.jetbrains.compose.resources.painterResource
-
-private data class CarouselItem(
-    val id: Int,
-    val image: DrawableResource,
-    val contentDescription: String,
-    val name: String,
-    val developer: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrendingGames(){
+fun TrendingGames(
+    games: List<GameUiModel> = MockGames,
+    onGameClick: (String) -> Unit = {},
+) {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .semantics(mergeDescendants = true) { heading() },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(text = "Jogos em alta", style = MaterialTheme.typography.titleLarge)
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                contentDescription = "Tendência de alta"
+                contentDescription = null
             )
         }
 
-        val items = remember {
-            listOf(
-                CarouselItem(0, Res.drawable.gtavi, "jogo 1", "Grand Theft Auto VI", "Rockstar Games"),
-                CarouselItem(1, Res.drawable.gtavi, "jogo 2", "Grand Theft Auto VI", "Rockstar Games"),
-                CarouselItem(2, Res.drawable.gtavi, "jogo 3", "Grand Theft Auto VI", "Rockstar Games"),
-                CarouselItem(3, Res.drawable.gtavi, "jogo 4", "Grand Theft Auto VI", "Rockstar Games"),
-                CarouselItem(4, Res.drawable.gtavi, "jogo 5", "Grand Theft Auto VI", "Rockstar Games"),
+        if (games.isEmpty()) {
+            EmptyState(
+                title = "Nenhum jogo em destaque",
+                message = "Os jogos em alta aparecerão aqui assim que houver avaliações recentes."
             )
+            return
         }
 
         HorizontalMultiBrowseCarousel(
-            state = rememberCarouselState { items.count() },
+            state = rememberCarouselState { games.count() },
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
@@ -75,8 +72,14 @@ fun TrendingGames(){
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 24.dp)
         ) { i ->
-            val item = items[i]
-            Column {
+            val item = games[i]
+            Column(
+                modifier = Modifier.clickable(
+                    role = Role.Button,
+                    onClickLabel = "Abrir detalhes de ${item.name}",
+                    onClick = { onGameClick(item.id) }
+                )
+            ) {
                 Image(
                     modifier = Modifier
                         .height(205.dp)

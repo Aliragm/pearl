@@ -17,10 +17,13 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.openapi.describe
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.utils.io.ExperimentalKtorApi
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalKtorApi::class)
 fun Route.followsController() {
     val followsService: FollowsService by application.dependencies
 
@@ -40,6 +43,9 @@ fun Route.followsController() {
                 ?: throw BadRequestException("Could not follow user")
             call.response.header(HttpHeaders.Location, "/follows/following/${request.userFollowingId}")
             call.respond(HttpStatusCode.Created, created)
+        }.describe {
+            summary = "Follow a user"
+            description = "Creates a follow relationship between two distinct users."
         }
 
         delete {
@@ -49,6 +55,9 @@ fun Route.followsController() {
                 throw NotFoundException("Follow relationship was not found.")
             }
             call.respond(HttpStatusCode.NoContent)
+        }.describe {
+            summary = "Unfollow a user"
+            description = "Removes an existing follow relationship and returns 204 No Content."
         }
 
         get("/followers/{userId}") {
@@ -65,6 +74,9 @@ fun Route.followsController() {
             val response = followsService.getAllFollowers(uuid, page = page, size = size)
             call.response.header("X-Total-Count", response.total.toString())
             call.respond(HttpStatusCode.OK, response)
+        }.describe {
+            summary = "List followers of a user"
+            description = "Returns a paginated list of follower relationships for the specified user."
         }
 
         get("/following/{userId}") {
@@ -81,6 +93,9 @@ fun Route.followsController() {
             val response = followsService.getAllFollowings(uuid, page = page, size = size)
             call.response.header("X-Total-Count", response.total.toString())
             call.respond(HttpStatusCode.OK, response)
+        }.describe {
+            summary = "List users followed by a user"
+            description = "Returns a paginated list of following relationships for the specified user."
         }
     }
 }

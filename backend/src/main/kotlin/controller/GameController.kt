@@ -2,6 +2,7 @@ package gg.pearl.controller
 
 import gg.pearl.dto.GameDTO
 import gg.pearl.dto.UpdateGameDTO
+import gg.pearl.dto.validate
 import gg.pearl.exceptions.BadRequestException
 import gg.pearl.exceptions.InvalidUuidException
 import gg.pearl.exceptions.MissingIdException
@@ -18,11 +19,14 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.openapi.describe
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.utils.io.ExperimentalKtorApi
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalKtorApi::class)
 fun Route.gameController() {
     val gameService: GameService by application.dependencies
 
@@ -35,7 +39,9 @@ fun Route.gameController() {
                 try {
                     Platform.valueOf(it.uppercase())
                 } catch (e: IllegalArgumentException) {
-                    null
+                    throw BadRequestException(
+                        "Invalid platform '$it'. Allowed values: ${Platform.entries.joinToString { p -> p.name }}"
+                    )
                 }
             }
             val minScore = call.request.queryParameters["minScore"]?.toDoubleOrNull()
@@ -52,6 +58,9 @@ fun Route.gameController() {
             )
             call.response.header("X-Total-Count", response.total.toString())
             call.respond(HttpStatusCode.OK, response)
+        }.describe {
+            summary = "List games (paginated with filters)"
+            description = "Returns a paginated catalog of games filtered by name, developer, platform, and minimum score."
         }
 
         get("/{id}") {
@@ -65,14 +74,22 @@ fun Route.gameController() {
             val game = gameService.getGameById(uuid)
                 ?: throw NotFoundException("Game with id $uuid was not found.")
             call.respond(HttpStatusCode.OK, game)
+        }.describe {
+            summary = "Get game by ID"
+            description = "Fetches a single game and its supported platforms by UUID."
         }
 
         post {
             val request = call.receive<GameDTO>()
+            request.validate()
+
             val created = gameService.createGame(request)
                 ?: throw BadRequestException("Could not create game")
             call.response.header(HttpHeaders.Location, "/games/${created.id}")
             call.respond(HttpStatusCode.Created, created)
+        }.describe {
+            summary = "Create a new game"
+            description = "Validates and registers a new game in the catalog."
         }
 
         patch("/{id}") {
@@ -84,9 +101,14 @@ fun Route.gameController() {
             }
 
             val request = call.receive<UpdateGameDTO>()
+            request.validate()
+
             val updated = gameService.updateGame(uuid, request)
                 ?: throw NotFoundException("Game with id $uuid was not found.")
             call.respond(HttpStatusCode.OK, updated)
+        }.describe {
+            summary = "Update game by ID"
+            description = "Partially updates game metadata and supported platforms."
         }
 
         delete("/{id}") {
@@ -102,6 +124,9 @@ fun Route.gameController() {
                 throw NotFoundException("Game with id $uuid was not found.")
             }
             call.respond(HttpStatusCode.NoContent)
+        }.describe {
+            summary = "Delete game by ID"
+            description = "Removes a game from the catalog and returns 204 No Content."
         }
     }
 }

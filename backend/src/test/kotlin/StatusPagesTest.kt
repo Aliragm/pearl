@@ -159,4 +159,72 @@ class StatusPagesTest {
         assertEquals("An unexpected error occurred. Please try again later.", problem.detail)
         assertEquals("/test/internal-error", problem.instance)
     }
+
+    @Test
+    fun `test validation exception returns 422 problem details`() = testApplication {
+        application {
+            configureSerialization()
+            configureStatusPages()
+            routing {
+                get("/test/validation-error") {
+                    throw ValidationException("Game meanScore must be between 0.0 and 5.0.")
+                }
+            }
+        }
+
+        val response = client.get("/test/validation-error")
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertTrue(response.headers[HttpHeaders.ContentType]?.contains("application/problem+json") == true)
+
+        val problem = objectMapper.readValue(response.bodyAsText(), ProblemDetails::class.java)
+        assertEquals(422, problem.status)
+        assertEquals("Validation Error", problem.title)
+        assertEquals("Game meanScore must be between 0.0 and 5.0.", problem.detail)
+        assertEquals("https://pearl.com/exceptions/ValidationException", problem.type)
+        assertEquals("/test/validation-error", problem.instance)
+    }
+
+    @Test
+    fun `test database foreign key constraint violation returns 422 instead of 500`() = testApplication {
+        application {
+            configureSerialization()
+            configureStatusPages()
+            routing {
+                get("/test/fk-violation") {
+                    throw java.sql.SQLException("insert or update on table violates foreign key constraint", "23503")
+                }
+            }
+        }
+
+        val response = client.get("/test/fk-violation")
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertTrue(response.headers[HttpHeaders.ContentType]?.contains("application/problem+json") == true)
+
+        val problem = objectMapper.readValue(response.bodyAsText(), ProblemDetails::class.java)
+        assertEquals(422, problem.status)
+        assertEquals("Referenced Resource Not Found", problem.title)
+        assertEquals("/test/fk-violation", problem.instance)
+    }
+
+    @Test
+    fun `test database unique constraint violation returns 409 instead of 500`() = testApplication {
+        application {
+            configureSerialization()
+            configureStatusPages()
+            routing {
+                get("/test/unique-violation") {
+                    throw java.sql.SQLException("duplicate key value violates unique constraint", "23505")
+                }
+            }
+        }
+
+        val response = client.get("/test/unique-violation")
+        assertEquals(HttpStatusCode.Conflict, response.status)
+        assertTrue(response.headers[HttpHeaders.ContentType]?.contains("application/problem+json") == true)
+
+        val problem = objectMapper.readValue(response.bodyAsText(), ProblemDetails::class.java)
+        assertEquals(409, problem.status)
+        assertEquals("Conflict", problem.title)
+        assertEquals("/test/unique-violation", problem.instance)
+    }
 }
