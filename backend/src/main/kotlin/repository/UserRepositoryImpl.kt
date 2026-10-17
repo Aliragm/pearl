@@ -69,7 +69,7 @@ class UserRepositoryImpl : UserRepository {
 
     override suspend fun getUserByEmail(email: String): User? {
         return withTransaction {
-            UserDAO.find { UserTable.email eq email }
+            UserDAO.find { UserTable.email.lowerCase() eq email.lowercase() }
                 .singleOrNull()
                 ?.let(::daoToModel)
         }
@@ -77,7 +77,7 @@ class UserRepositoryImpl : UserRepository {
 
     override suspend fun getUserByEmailAndPassword(email: String, password: String): User? {
         return withTransaction {
-            UserDAO.find { (UserTable.email eq email) and (UserTable.password eq password) }
+            UserDAO.find { (UserTable.email.lowerCase() eq email.lowercase()) and (UserTable.password eq password) }
                 .singleOrNull()
                 ?.let(::daoToModel)
         }

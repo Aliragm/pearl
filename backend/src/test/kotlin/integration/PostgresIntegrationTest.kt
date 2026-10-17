@@ -47,6 +47,7 @@ class PostgresIntegrationTest {
                 password = container.password
                 driverClassName = "org.postgresql.Driver"
                 maximumPoolSize = 5
+                addDataSourceProperty("stringtype", "unspecified")
             }
             val ds = HikariDataSource(config)
             dataSource = ds
