@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package = "github.com/Aliragm/pearl/services/ingestor-go/proto";
+
+package gameservice;
+
+service GameService {
+  rpc Search(SearchGameRequest) returns (SearchGameResponse);
+}
+
+message SearchGameRequest {
+  string searchString = 1;
+}
+
+message Game {
+  int32 id = 1;
+  repeated int32 platforms = 2;
+  string name = 3;
+  string summary = 4;
+  string developer = 5;
+}
+
+message SearchGameResponse {
+  repeated Game games = 1;
+}
