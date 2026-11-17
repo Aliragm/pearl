@@ -14,10 +14,11 @@ message SearchGameRequest {
 
 message Game {
   int32 id = 1;
-  repeated int32 platforms = 2;
+  repeated string platforms = 2;
   string name = 3;
   string summary = 4;
-  string developer = 5;
+  repeated string companies = 5;
+  string cover_url = 6;
 }
 
 message SearchGameResponse {
