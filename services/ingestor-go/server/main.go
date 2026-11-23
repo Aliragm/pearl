@@ -7,13 +7,17 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	igdbClient "github.com/Aliragm/pearl/services/ingestor-go/client"
 	"github.com/Aliragm/pearl/services/ingestor-go/domain"
-	pb "github.com/Aliragm/pearl/services/ingestor-go/proto"
+	pb "github.com/Aliragm/pearl/services/ingestor-go/proto/pearl/catalog/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -53,7 +57,7 @@ type server struct {
 	searcher domain.GameSearcher
 }
 
-func (s *server) Search(ctx context.Context, req *pb.SearchGameRequest) (*pb.SearchGameResponse, error) {
+func (s *server) Search(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
 	searchString := req.GetSearchString()
 	domainGames, err := s.searcher.Search(ctx, searchString)
 	if err != nil {
@@ -81,9 +85,24 @@ func (s *server) Search(ctx context.Context, req *pb.SearchGameRequest) (*pb.Sea
 		})
 	}
 
-	return &pb.SearchGameResponse{
+	return &pb.SearchResponse{
 		Games: pbGames,
 	}, nil
+}
+
+func newGRPCServer(searcher domain.GameSearcher) (*grpc.Server, *health.Server) {
+	s := grpc.NewServer()
+	pb.RegisterGameServiceServer(s, &server{
+		searcher: searcher,
+	})
+
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus(pb.GameService_ServiceDesc.ServiceName, healthpb.HealthCheckResponse_SERVING)
+	healthpb.RegisterHealthServer(s, healthServer)
+
+	reflection.Register(s)
+	return s, healthServer
 }
 
 func main() {
@@ -91,16 +110,32 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":8081")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterGameServiceServer(s, &server{
-		searcher: igdbClient.NewIGDBHttpClient(),
-	})
-	reflection.Register(s)
-	log.Printf("gRPC server listening at %v", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	s, healthServer := newGRPCServer(igdbClient.NewIGDBHttpClient())
+
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		log.Printf("gRPC server listening at %v", lis.Addr())
+		serveErr <- s.Serve(lis)
+	}()
+
+	select {
+	case err := <-serveErr:
+		if err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	case <-sigCtx.Done():
+		log.Println("Shutdown signal received; stopping gRPC server gracefully...")
+		healthServer.Shutdown()
+		s.GracefulStop()
+		if err := <-serveErr; err != nil {
+			log.Fatalf("failed during graceful shutdown: %v", err)
+		}
+		log.Println("gRPC server stopped cleanly.")
 	}
 }
