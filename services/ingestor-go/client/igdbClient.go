@@ -64,12 +64,7 @@ func (c *IGDBHttpClient) Search(ctx context.Context, searchString string) ([]dom
 
 	games := make([]domain.Game, 0, len(igdbGames))
 	for _, g := range igdbGames {
-		platforms := make([]string, 0, len(g.Platforms))
-		for _, p := range g.Platforms {
-			if p.Name != "" {
-				platforms = append(platforms, p.Name)
-			}
-		}
+		platforms := domain.NormalizePlatforms(g.Platforms)
 
 		companies := make([]string, 0, len(g.InvolvedCompanies))
 		for _, ic := range g.InvolvedCompanies {
