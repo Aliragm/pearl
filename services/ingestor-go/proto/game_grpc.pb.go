@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.36.2
-// source: proto/game.proto
+// source: game.proto
 
 package proto
 
@@ -25,7 +25,10 @@ const (
 // GameServiceClient is the client API for GameService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// GameService expõe operações de busca de jogos na API externa (IGDB).
 type GameServiceClient interface {
+	// Search busca jogos pelo nome e retorna uma lista normalizada.
 	Search(ctx context.Context, in *SearchGameRequest, opts ...grpc.CallOption) (*SearchGameResponse, error)
 }
 
@@ -50,7 +53,10 @@ func (c *gameServiceClient) Search(ctx context.Context, in *SearchGameRequest, o
 // GameServiceServer is the server API for GameService service.
 // All implementations must embed UnimplementedGameServiceServer
 // for forward compatibility.
+//
+// GameService expõe operações de busca de jogos na API externa (IGDB).
 type GameServiceServer interface {
+	// Search busca jogos pelo nome e retorna uma lista normalizada.
 	Search(context.Context, *SearchGameRequest) (*SearchGameResponse, error)
 	mustEmbedUnimplementedGameServiceServer()
 }
@@ -117,5 +123,5 @@ var GameService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/game.proto",
+	Metadata: "game.proto",
 }

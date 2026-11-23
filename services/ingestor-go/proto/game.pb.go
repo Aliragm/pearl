@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.36.2
-// source: proto/game.proto
+// source: game.proto
 
 package proto
 
@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// SearchGameRequest representa o termo de busca enviado pelo cliente.
 type SearchGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SearchString  string                 `protobuf:"bytes,1,opt,name=searchString,proto3" json:"searchString,omitempty"`
@@ -30,7 +31,7 @@ type SearchGameRequest struct {
 
 func (x *SearchGameRequest) Reset() {
 	*x = SearchGameRequest{}
-	mi := &file_proto_game_proto_msgTypes[0]
+	mi := &file_game_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +43,7 @@ func (x *SearchGameRequest) String() string {
 func (*SearchGameRequest) ProtoMessage() {}
 
 func (x *SearchGameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_game_proto_msgTypes[0]
+	mi := &file_game_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +56,7 @@ func (x *SearchGameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchGameRequest.ProtoReflect.Descriptor instead.
 func (*SearchGameRequest) Descriptor() ([]byte, []int) {
-	return file_proto_game_proto_rawDescGZIP(), []int{0}
+	return file_game_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SearchGameRequest) GetSearchString() string {
@@ -65,6 +66,7 @@ func (x *SearchGameRequest) GetSearchString() string {
 	return ""
 }
 
+// Game representa os dados normalizados de um jogo.
 type Game struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -79,7 +81,7 @@ type Game struct {
 
 func (x *Game) Reset() {
 	*x = Game{}
-	mi := &file_proto_game_proto_msgTypes[1]
+	mi := &file_game_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -91,7 +93,7 @@ func (x *Game) String() string {
 func (*Game) ProtoMessage() {}
 
 func (x *Game) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_game_proto_msgTypes[1]
+	mi := &file_game_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +106,7 @@ func (x *Game) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Game.ProtoReflect.Descriptor instead.
 func (*Game) Descriptor() ([]byte, []int) {
-	return file_proto_game_proto_rawDescGZIP(), []int{1}
+	return file_game_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Game) GetId() int32 {
@@ -149,6 +151,7 @@ func (x *Game) GetCoverUrl() string {
 	return ""
 }
 
+// SearchGameResponse contém a lista de jogos encontrados.
 type SearchGameResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Games         []*Game                `protobuf:"bytes,1,rep,name=games,proto3" json:"games,omitempty"`
@@ -158,7 +161,7 @@ type SearchGameResponse struct {
 
 func (x *SearchGameResponse) Reset() {
 	*x = SearchGameResponse{}
-	mi := &file_proto_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +173,7 @@ func (x *SearchGameResponse) String() string {
 func (*SearchGameResponse) ProtoMessage() {}
 
 func (x *SearchGameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +186,7 @@ func (x *SearchGameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchGameResponse.ProtoReflect.Descriptor instead.
 func (*SearchGameResponse) Descriptor() ([]byte, []int) {
-	return file_proto_game_proto_rawDescGZIP(), []int{2}
+	return file_game_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SearchGameResponse) GetGames() []*Game {
@@ -193,11 +196,12 @@ func (x *SearchGameResponse) GetGames() []*Game {
 	return nil
 }
 
-var File_proto_game_proto protoreflect.FileDescriptor
+var File_game_proto protoreflect.FileDescriptor
 
-const file_proto_game_proto_rawDesc = "" +
+const file_game_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/game.proto\x12\vgameservice\"7\n" +
+	"\n" +
+	"game.proto\x12\vgameservice\"7\n" +
 	"\x11SearchGameRequest\x12\"\n" +
 	"\fsearchString\x18\x01 \x01(\tR\fsearchString\"\x9d\x01\n" +
 	"\x04Game\x12\x0e\n" +
@@ -213,24 +217,24 @@ const file_proto_game_proto_rawDesc = "" +
 	"\x06Search\x12\x1e.gameservice.SearchGameRequest\x1a\x1f.gameservice.SearchGameResponseB5Z3github.com/Aliragm/pearl/services/ingestor-go/protob\x06proto3"
 
 var (
-	file_proto_game_proto_rawDescOnce sync.Once
-	file_proto_game_proto_rawDescData []byte
+	file_game_proto_rawDescOnce sync.Once
+	file_game_proto_rawDescData []byte
 )
 
-func file_proto_game_proto_rawDescGZIP() []byte {
-	file_proto_game_proto_rawDescOnce.Do(func() {
-		file_proto_game_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_game_proto_rawDesc), len(file_proto_game_proto_rawDesc)))
+func file_game_proto_rawDescGZIP() []byte {
+	file_game_proto_rawDescOnce.Do(func() {
+		file_game_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_game_proto_rawDesc), len(file_game_proto_rawDesc)))
 	})
-	return file_proto_game_proto_rawDescData
+	return file_game_proto_rawDescData
 }
 
-var file_proto_game_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_proto_game_proto_goTypes = []any{
+var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_game_proto_goTypes = []any{
 	(*SearchGameRequest)(nil),  // 0: gameservice.SearchGameRequest
 	(*Game)(nil),               // 1: gameservice.Game
 	(*SearchGameResponse)(nil), // 2: gameservice.SearchGameResponse
 }
-var file_proto_game_proto_depIdxs = []int32{
+var file_game_proto_depIdxs = []int32{
 	1, // 0: gameservice.SearchGameResponse.games:type_name -> gameservice.Game
 	0, // 1: gameservice.GameService.Search:input_type -> gameservice.SearchGameRequest
 	2, // 2: gameservice.GameService.Search:output_type -> gameservice.SearchGameResponse
@@ -241,26 +245,26 @@ var file_proto_game_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_proto_game_proto_init() }
-func file_proto_game_proto_init() {
-	if File_proto_game_proto != nil {
+func init() { file_game_proto_init() }
+func file_game_proto_init() {
+	if File_game_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_game_proto_rawDesc), len(file_proto_game_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_proto_rawDesc), len(file_game_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_game_proto_goTypes,
-		DependencyIndexes: file_proto_game_proto_depIdxs,
-		MessageInfos:      file_proto_game_proto_msgTypes,
+		GoTypes:           file_game_proto_goTypes,
+		DependencyIndexes: file_game_proto_depIdxs,
+		MessageInfos:      file_game_proto_msgTypes,
 	}.Build()
-	File_proto_game_proto = out.File
-	file_proto_game_proto_goTypes = nil
-	file_proto_game_proto_depIdxs = nil
+	File_game_proto = out.File
+	file_game_proto_goTypes = nil
+	file_game_proto_depIdxs = nil
 }
