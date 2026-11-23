@@ -1,5 +1,19 @@
 package domain
 
+import (
+	"context"
+	"errors"
+)
+
+var (
+	ErrEmptySearch = errors.New("search string cannot be empty")
+	ErrExternalAPI = errors.New("failed to fetch games from external API")
+)
+
+type GameSearcher interface {
+	Search(ctx context.Context, searchString string) ([]Game, error)
+}
+
 type Game struct {
 	ID        int32
 	Name      string
