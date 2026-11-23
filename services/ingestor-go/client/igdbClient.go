@@ -8,12 +8,29 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Aliragm/pearl/services/ingestor-go/domain"
 )
 
-func IgdbSearch(ctx context.Context, searchString string) ([]domain.Game, error) {
+type IGDBHttpClient struct {
+	httpClient *http.Client
+	baseURL    string
+}
+
+func NewIGDBHttpClient() *IGDBHttpClient {
+	return &IGDBHttpClient{
+		httpClient: &http.Client{Timeout: time.Second * 10},
+		baseURL:    "https://api.igdb.com/v4/games",
+	}
+}
+
+func (c *IGDBHttpClient) Search(ctx context.Context, searchString string) ([]domain.Game, error) {
+	if strings.TrimSpace(searchString) == "" {
+		return nil, fmt.Errorf("%w: empty search term", domain.ErrEmptySearch)
+	}
+
 	query := fmt.Sprintf("search %q; "+
 		"fields name, involved_companies.company.name, platforms.name, summary, cover.image_id; "+
 		"where game_type = 0; "+
@@ -21,29 +38,28 @@ func IgdbSearch(ctx context.Context, searchString string) ([]domain.Game, error)
 
 	requestBody := bytes.NewBufferString(query)
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.igdb.com/v4/games", requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, requestBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("%w: failed to create request: %w", domain.ErrExternalAPI, err)
 	}
 	httpReq.Header.Add("Client-ID", os.Getenv("CLIENT_ID_TWITCH"))
 	httpReq.Header.Add("Authorization", "Bearer "+os.Getenv("ACCESS_TOKEN"))
 	httpReq.Header.Add("Content-Type", "text/plain")
 
-	client := &http.Client{Timeout: time.Second * 10}
-	response, err := client.Do(httpReq)
+	response, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("request to IGDB failed: %w", err)
+		return nil, fmt.Errorf("%w: request to IGDB failed: %w", domain.ErrExternalAPI, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(response.Body)
-		return nil, fmt.Errorf("unexpected status code: %d (%s)", response.StatusCode, string(bodyBytes))
+		return nil, fmt.Errorf("%w: unexpected status code %d (%s)", domain.ErrExternalAPI, response.StatusCode, string(bodyBytes))
 	}
 
 	var igdbGames []domain.IGDBGame
 	if err := json.NewDecoder(response.Body).Decode(&igdbGames); err != nil {
-		return nil, fmt.Errorf("failed to decode IGDB response: %w", err)
+		return nil, fmt.Errorf("%w: failed to decode IGDB response: %w", domain.ErrExternalAPI, err)
 	}
 
 	games := make([]domain.Game, 0, len(igdbGames))

@@ -3,15 +3,19 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"log"
 	"net"
 	"os"
 	"strings"
 
 	igdbClient "github.com/Aliragm/pearl/services/ingestor-go/client"
+	"github.com/Aliragm/pearl/services/ingestor-go/domain"
 	pb "github.com/Aliragm/pearl/services/ingestor-go/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 )
 
 func loadEnv() {
@@ -46,13 +50,23 @@ func loadEnv() {
 
 type server struct {
 	pb.UnimplementedGameServiceServer
+	searcher domain.GameSearcher
 }
 
 func (s *server) Search(ctx context.Context, req *pb.SearchGameRequest) (*pb.SearchGameResponse, error) {
 	searchString := req.GetSearchString()
-	domainGames, err := igdbClient.IgdbSearch(ctx, searchString)
+	domainGames, err := s.searcher.Search(ctx, searchString)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, domain.ErrEmptySearch) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, status.Error(codes.DeadlineExceeded, err.Error())
+		}
+		if errors.Is(err, context.Canceled) {
+			return nil, status.Error(codes.Canceled, err.Error())
+		}
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
 	pbGames := make([]*pb.Game, 0, len(domainGames))
@@ -81,7 +95,9 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterGameServiceServer(s, &server{})
+	pb.RegisterGameServiceServer(s, &server{
+		searcher: igdbClient.NewIGDBHttpClient(),
+	})
 	reflection.Register(s)
 	log.Printf("gRPC server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
