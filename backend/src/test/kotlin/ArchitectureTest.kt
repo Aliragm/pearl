@@ -20,6 +20,10 @@ class ArchitectureTest {
                     import.name.startsWith("com.zaxxer") ||
                     import.name.startsWith("org.flywaydb") ||
                     import.name.startsWith("java.sql") ||
+                    import.name.startsWith("io.grpc") ||
+                    import.name.startsWith("com.google.protobuf") ||
+                    import.name.startsWith("pearl.catalog") ||
+                    import.name.startsWith("gg.pearl.infrastructure") ||
                     import.name.startsWith("gg.pearl.controller") ||
                     import.name.startsWith("gg.pearl.service") ||
                     import.name.startsWith("gg.pearl.repository") ||
@@ -37,11 +41,13 @@ class ArchitectureTest {
                 val service = Layer("Service", "gg.pearl.service..")
                 val repository = Layer("Repository", "gg.pearl.repository..")
                 val controller = Layer("Controller", "gg.pearl.controller..")
+                val infrastructure = Layer("Infrastructure", "gg.pearl.infrastructure..")
 
                 domain.dependsOnNothing()
                 service.dependsOn(domain, repository)
                 repository.dependsOn(domain)
                 controller.dependsOn(service, domain)
+                infrastructure.dependsOn(domain)
             }
     }
 
@@ -53,7 +59,11 @@ class ArchitectureTest {
             .assertFalse { file ->
                 file.hasImport { import ->
                     import.name.startsWith("io.ktor.server") ||
-                    import.name.startsWith("gg.pearl.controller")
+                    import.name.startsWith("gg.pearl.controller") ||
+                    import.name.startsWith("io.grpc") ||
+                    import.name.startsWith("com.google.protobuf") ||
+                    import.name.startsWith("pearl.catalog") ||
+                    import.name.startsWith("gg.pearl.infrastructure")
                 }
             }
     }

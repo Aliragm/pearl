@@ -24,3 +24,9 @@ database:
   url: "$DB_URL:jdbc:postgresql://localhost:5432/pearl_db"
   user: "$DB_USER:postgres"
   password: "$DB_PASSWORD:postgres"
+
+ingestor:
+  grpc:
+    host: "$INGESTOR_GRPC_HOST:localhost"
+    port: "$INGESTOR_GRPC_PORT:8081"
+    deadlineMs: "$INGESTOR_GRPC_DEADLINE_MS:3000"

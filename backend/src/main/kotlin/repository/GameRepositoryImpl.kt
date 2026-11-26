@@ -34,6 +34,25 @@ class GameRepositoryImpl : GameRepository {
             .map { row -> Platform.valueOf(row[GamePlatformsTable.platform]) }
     }
 
+    private fun insertGameInTransaction(game: Game): Game {
+        val distinctPlatforms = game.platform.distinct()
+        val entity = GameDAO.new {
+            this.externalId = game.externalId
+            this.cover = game.cover
+            this.name = game.name
+            this.summary = game.summary
+            this.developer = game.developer
+            this.meanScore = game.meanScore
+        }
+        if (distinctPlatforms.isNotEmpty()) {
+            GamePlatformsTable.batchInsert(distinctPlatforms) { p ->
+                this[GamePlatformsTable.gameId] = entity.id
+                this[GamePlatformsTable.platform] = p.name
+            }
+        }
+        return daoToModel(entity, distinctPlatforms)
+    }
+
     override suspend fun getGames(
         name: String?,
         developer: String?,
@@ -81,10 +100,13 @@ class GameRepositoryImpl : GameRepository {
                 val gameId = row[GameTable.id].value
                 Game(
                     id = gameId.toKotlinUuid(),
+                    externalId = row[GameTable.externalId],
+                    cover = row[GameTable.cover],
                     name = row[GameTable.name],
+                    summary = row[GameTable.summary],
                     developer = row[GameTable.developer],
                     meanScore = row[GameTable.meanScore],
-                    platform = loadPlatforms(gameId) //olhar depois, pode dar problema
+                    platform = loadPlatforms(gameId)
                 )
             }
             Pair(games, total)
@@ -99,20 +121,29 @@ class GameRepositoryImpl : GameRepository {
         }
     }
 
-    override suspend fun createGame(game: Game): Game? {
+    override suspend fun getGameByExternalId(externalId: Int): Game? {
         return withTransaction {
-            val entity = GameDAO.new {
-                this.name = game.name
-                this.developer = game.developer
-                this.meanScore = game.meanScore
+            GameDAO.find { GameTable.externalId eq externalId }.firstOrNull()?.let { dao ->
+                daoToModel(dao, loadPlatforms(dao.id.value))
             }
-            if (game.platform.isNotEmpty()) {
-                GamePlatformsTable.batchInsert(game.platform) { p ->
-                    this[GamePlatformsTable.gameId] = entity.id
-                    this[GamePlatformsTable.platform] = p.name
+        }
+    }
+
+    override suspend fun findOrCreateByExternalId(game: Game): Game {
+        return withTransaction {
+            if (game.externalId != null) {
+                val existing = GameDAO.find { GameTable.externalId eq game.externalId }.firstOrNull()
+                if (existing != null) {
+                    return@withTransaction daoToModel(existing, loadPlatforms(existing.id.value))
                 }
             }
-            daoToModel(entity, game.platform)
+            insertGameInTransaction(game)
+        }
+    }
+
+    override suspend fun createGame(game: Game): Game? {
+        return withTransaction {
+            insertGameInTransaction(game)
         }
     }
 
@@ -121,14 +152,18 @@ class GameRepositoryImpl : GameRepository {
             val javaUuid = id.toJavaUuid()
             val entity = GameDAO.findById(javaUuid) ?: return@withTransaction null
 
+            dto.externalId?.let { entity.externalId = it }
+            dto.cover?.let { entity.cover = it }
             dto.name?.let { entity.name = it }
+            dto.summary?.let { entity.summary = it }
             dto.developer?.let { entity.developer = it }
             dto.meanScore?.let { entity.meanScore = it }
 
             if (dto.platform != null) {
                 GamePlatformsTable.deleteWhere { gameId eq javaUuid }
-                if (dto.platform.isNotEmpty()) {
-                    GamePlatformsTable.batchInsert(dto.platform) { p ->
+                val distinctPlatforms = dto.platform.distinct()
+                if (distinctPlatforms.isNotEmpty()) {
+                    GamePlatformsTable.batchInsert(distinctPlatforms) { p ->
                         this[GamePlatformsTable.gameId] = entity.id
                         this[GamePlatformsTable.platform] = p.name
                     }

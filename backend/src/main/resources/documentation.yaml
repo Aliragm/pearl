@@ -1,8 +1,8 @@
 openapi: "3.0.3"
 info:
   title: "Pearl.gg API"
-  description: "RESTful API documentation for Pearl backend services, including Users, Games, Posts, Comments, and Follows with pagination, filtering, and semantic HTTP status codes."
-  version: "1.0.0"
+  description: "RESTful API documentation for Pearl backend services, including Users, Games (with gRPC external catalog search + PostgreSQL fallback), Posts (with on-demand game persistence), Comments, and Follows with pagination, filtering, and semantic HTTP status codes."
+  version: "1.1.0"
 servers:
   - url: "http://localhost:8080"
     description: "Local development server"
@@ -261,6 +261,60 @@ paths:
         "400":
           description: "Invalid request payload"
 
+  /games/search:
+    get:
+      tags:
+        - "Games"
+      summary: "Search games via catalog ingestor (with PostgreSQL fallback)"
+      description: "Searches the external catalog microservice via gRPC (with explicit deadline) and falls back to PostgreSQL when the ingestor is unavailable."
+      parameters:
+        - name: "q"
+          in: "query"
+          required: true
+          description: "Search term (must not be blank)"
+          schema:
+            type: "string"
+          example: "zelda"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Page number (1-indexed, default: 1)"
+          schema:
+            type: "integer"
+            default: 1
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Page size (default: 10, max: 50)"
+          schema:
+            type: "integer"
+            default: 10
+      responses:
+        "200":
+          description: "Paginated search results"
+          headers:
+            X-Total-Count:
+              schema:
+                type: "integer"
+              description: "Total number of matching games"
+            X-Catalog-Source:
+              schema:
+                type: "string"
+                enum:
+                  - "igdb"
+                  - "postgres-fallback"
+              description: "Data source used to serve the search response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseGame"
+        "400":
+          description: "Missing or blank query parameter 'q'"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+
   /games/{id}:
     get:
       tags:
@@ -386,7 +440,8 @@ paths:
     post:
       tags:
         - "Posts"
-      summary: "Create a post"
+      summary: "Create a post/review"
+      description: "Creates a review post linked to a user and game. Provide either an existing 'gameId' or external 'game' metadata for idempotent on-demand persistence by 'externalId'."
       requestBody:
         required: true
         content:
@@ -407,6 +462,16 @@ paths:
                 $ref: "#/components/schemas/PostDTO"
         "400":
           description: "Invalid request payload"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "422":
+          description: "Validation error or referenced resource not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
 
   /posts/{id}:
     get:
@@ -857,36 +922,59 @@ components:
           type: "string"
           format: "uuid"
           readOnly: true
+          nullable: true
           example: "2a52efc1-7fbd-46ce-bc5c-59fba11b8162"
+        externalId:
+          type: "integer"
+          format: "int32"
+          nullable: true
+          example: 1022
+        cover:
+          type: "string"
+          example: "https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg"
+        summary:
+          type: "string"
+          example: "The Legend of Zelda is the first title in the Zelda series."
         name:
           type: "string"
-          example: "Hollow Knight: Silksong"
+          example: "The Legend of Zelda"
         developer:
           type: "string"
-          example: "Team Cherry"
+          example: "Nintendo"
         meanScore:
           type: "number"
           format: "double"
-          example: 9.8
+          example: 4.8
         platform:
           type: "array"
           items:
             $ref: "#/components/schemas/Platform"
-          example: ["PC", "NINTENDO", "PLAYSTATION", "XBOX"]
+          example: ["NINTENDO", "PC"]
 
     UpdateGameDTO:
       type: "object"
       properties:
+        externalId:
+          type: "integer"
+          format: "int32"
+          nullable: true
+          example: 1022
+        cover:
+          type: "string"
+          example: "https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg"
+        summary:
+          type: "string"
+          example: "Updated game summary."
         name:
           type: "string"
-          example: "Hollow Knight: Silksong (GOTY Edition)"
+          example: "The Legend of Zelda (Collector's Edition)"
         developer:
           type: "string"
-          example: "Team Cherry"
+          example: "Nintendo"
         meanScore:
           type: "number"
           format: "double"
-          example: 9.9
+          example: 4.9
         platform:
           type: "array"
           items:
@@ -917,7 +1005,6 @@ components:
       type: "object"
       required:
         - "userId"
-        - "gameId"
         - "title"
         - "content"
         - "score"
@@ -934,17 +1021,23 @@ components:
         gameId:
           type: "string"
           format: "uuid"
+          nullable: true
+          description: "UUID of an existing persisted game. Required when 'game' is omitted."
           example: "2a52efc1-7fbd-46ce-bc5c-59fba11b8162"
+        game:
+          $ref: "#/components/schemas/GameDTO"
+          nullable: true
+          description: "External game metadata for on-demand persistence when 'gameId' is omitted."
         title:
           type: "string"
-          example: "A Masterpiece of Metroidvania"
+          example: "A Masterpiece of Adventure"
         content:
           type: "string"
-          example: "The combat and exploration improve upon the original in every conceivable way."
+          example: "The exploration and dungeon design hold up remarkably well."
         score:
           type: "number"
           format: "double"
-          example: 10.0
+          example: 4.5
 
     UpdatePostDTO:
       type: "object"
@@ -958,7 +1051,7 @@ components:
         score:
           type: "number"
           format: "double"
-          example: 9.5
+          example: 5.0
 
     PageResponsePost:
       type: "object"

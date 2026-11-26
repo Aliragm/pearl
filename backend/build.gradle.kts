@@ -1,7 +1,9 @@
+import com.google.protobuf.gradle.*
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(ktorLibs.plugins.ktor)
+    id("com.google.protobuf") version "0.10.1"
 }
 
 group = "gg.pearl"
@@ -14,6 +16,15 @@ application {
 kotlin {
     jvmToolchain(21)
 }
+
+sourceSets {
+    main {
+        proto {
+            srcDir("../protos")
+        }
+    }
+}
+
 dependencies {
     implementation(ktorLibs.serialization.jackson)
     implementation(ktorLibs.server.auth)
@@ -44,9 +55,52 @@ dependencies {
 
     implementation("io.ktor:ktor-server-status-pages")
 
+    // gRPC & Protobuf
+    val grpcVersion = "1.85.1"
+    val grpcKotlinVersion = "1.5.0"
+    val protobufVersion = "4.36.2"
+
+    implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
+    implementation("io.grpc:grpc-protobuf:$grpcVersion")
+    implementation("io.grpc:grpc-stub:$grpcVersion")
+    implementation("io.grpc:grpc-netty-shaded:$grpcVersion")
+    implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
+
+    testImplementation("io.grpc:grpc-inprocess:$grpcVersion")
+    testImplementation("io.grpc:grpc-testing:$grpcVersion")
+
     testImplementation("com.lemonappdev:konsist:0.17.3")
     testImplementation("org.testcontainers:postgresql:1.20.4")
     testImplementation("org.testcontainers:junit-jupiter:1.20.4")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
+}
+
+protobuf {
+    val grpcVersion = "1.85.1"
+    val grpcKotlinVersion = "1.5.0"
+    val protobufVersion = "4.36.2"
+
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+        create("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins {
+                create("grpc")
+                create("grpckt")
+            }
+            task.builtins {
+                create("kotlin")
+            }
+        }
+    }
 }

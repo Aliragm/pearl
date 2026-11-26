@@ -2,6 +2,8 @@ package gg.pearl.integration
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import gg.pearl.dto.GameDTO
+import gg.pearl.dto.PostDTO
 import gg.pearl.model.Comments
 import gg.pearl.model.Follows
 import gg.pearl.model.Game
@@ -9,6 +11,7 @@ import gg.pearl.model.Post
 import gg.pearl.model.User
 import gg.pearl.model.enums.Platform
 import gg.pearl.repository.*
+import gg.pearl.service.PostService
 import kotlinx.coroutines.runBlocking
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
@@ -161,5 +164,55 @@ class PostgresIntegrationTest {
 
         val duplicate = followsRepository.createFollow(follow)
         assertNull(duplicate)
+    }
+
+    @Test
+    fun `test game metadata V2 migration and on-demand persistence on review creation`() = runBlocking {
+        if (!isDockerAvailable) {
+            println("Skipping test: Docker is not available.")
+            return@runBlocking
+        }
+
+        val user = userRepository.createUser(
+            User(name = "Link Reviewer", email = "link@pearl.gg", password = "pass")
+        )!!
+        val postService = PostService(postRepository, gameRepository)
+
+        val externalGame = GameDTO(
+            externalId = 1022,
+            name = "The Legend of Zelda",
+            developer = "Nintendo",
+            cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg",
+            summary = "Classic action-adventure.",
+            platform = listOf(Platform.NINTENDO)
+        )
+
+        val createdPost = postService.createPost(
+            PostDTO(
+                userId = user.id,
+                game = externalGame,
+                title = "Timeless classic",
+                content = "Defined an entire genre.",
+                score = 5.0
+            )
+        )
+        assertNotNull(createdPost)
+        val persistedGameId = assertNotNull(createdPost.gameId)
+
+        val retrieved = gameRepository.getGameByExternalId(1022)
+        assertNotNull(retrieved)
+        assertEquals(persistedGameId, retrieved.id)
+        assertEquals("https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg", retrieved.cover)
+        assertEquals("Classic action-adventure.", retrieved.summary)
+
+        val reused = gameRepository.findOrCreateByExternalId(
+            Game(
+                externalId = 1022,
+                name = "The Legend of Zelda",
+                developer = "Nintendo",
+                platform = listOf(Platform.NINTENDO)
+            )
+        )
+        assertEquals(persistedGameId, reused.id)
     }
 }

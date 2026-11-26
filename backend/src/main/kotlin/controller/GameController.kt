@@ -63,6 +63,21 @@ fun Route.gameController() {
             description = "Returns a paginated catalog of games filtered by name, developer, platform, and minimum score."
         }
 
+        get("/search") {
+            val query = call.request.queryParameters["q"]?.takeIf { it.isNotBlank() }
+                ?: throw BadRequestException("The query parameter 'q' is required and must not be blank.")
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 10
+
+            val result = gameService.searchGames(query = query, page = page, size = size)
+            call.response.header("X-Total-Count", result.page.total.toString())
+            call.response.header("X-Catalog-Source", if (result.fromFallback) "postgres-fallback" else "igdb")
+            call.respond(HttpStatusCode.OK, result.page)
+        }.describe {
+            summary = "Search games via catalog ingestor (with PostgreSQL fallback)"
+            description = "Searches external catalog via gRPC and falls back to PostgreSQL when the ingestor is unavailable."
+        }
+
         get("/{id}") {
             val idParam = call.parameters["id"] ?: throw MissingIdException("The game id parameter is required.")
             val uuid = try {

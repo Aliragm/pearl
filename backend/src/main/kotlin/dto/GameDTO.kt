@@ -5,6 +5,9 @@ import kotlin.uuid.Uuid
 
 data class GameDTO(
     val id: Uuid? = null,
+    val externalId: Int? = null,
+    val cover: String = "",
+    val summary: String = "",
     val platform: List<Platform> = emptyList(),
     val name: String,
     val developer: String,
@@ -12,6 +15,9 @@ data class GameDTO(
 )
 
 data class UpdateGameDTO(
+    val externalId: Int? = null,
+    val cover: String? = null,
+    val summary: String? = null,
     val platform: List<Platform>? = null,
     val name: String? = null,
     val developer: String? = null,

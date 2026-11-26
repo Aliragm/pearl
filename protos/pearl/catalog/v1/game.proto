@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package pearl.catalog.v1;
+
+option go_package = "github.com/Aliragm/pearl/services/ingestor-go/proto/pearl/catalog/v1;catalogv1";
+option java_multiple_files = true;
+
+// GameService expõe operações de busca de jogos na API externa (IGDB).
+service GameService {
+  // Search busca jogos pelo nome e retorna uma lista normalizada.
+  rpc Search(SearchRequest) returns (SearchResponse);
+}
+
+// SearchRequest representa o termo de busca enviado pelo cliente.
+message SearchRequest {
+  // Termo de busca utilizado para consultar jogos pelo título.
+  string search_string = 1;
+}
+
+// Game representa os dados normalizados de um jogo retornados pelo ingestor.
+message Game {
+  // Identificador externo do jogo na base da IGDB.
+  int32 id = 1;
+  // Lista de plataformas normalizadas (PC, PLAYSTATION, XBOX, NINTENDO).
+  repeated string platforms = 2;
+  // Título oficial do jogo.
+  string name = 3;
+  // Sinopse ou descrição resumida do jogo.
+  string summary = 4;
+  // Lista de empresas envolvidas no desenvolvimento ou publicação do jogo.
+  repeated string companies = 5;
+  // URL completa da imagem de capa do jogo.
+  string cover_url = 6;
+}
+
+// SearchResponse contém a lista de jogos encontrados para a consulta.
+message SearchResponse {
+  // Lista de jogos normalizados retornados pela busca.
+  repeated Game games = 1;
+}
