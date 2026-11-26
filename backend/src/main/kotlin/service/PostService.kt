@@ -3,12 +3,16 @@ package gg.pearl.service
 import gg.pearl.dto.PageResponse
 import gg.pearl.dto.PostDTO
 import gg.pearl.dto.UpdatePostDTO
+import gg.pearl.exceptions.ValidationException
+import gg.pearl.model.Game
 import gg.pearl.model.Post
+import gg.pearl.repository.GameRepository
 import gg.pearl.repository.PostRepository
 import kotlin.uuid.Uuid
 
 class PostService(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val gameRepository: GameRepository
 ) {
 
     suspend fun getPosts(
@@ -43,7 +47,24 @@ class PostService(
     }
 
     suspend fun createPost(post: PostDTO): PostDTO? {
-        val newPost = convertDTOToPost(post)
+        val resolvedGameId = when {
+            post.gameId != null -> post.gameId
+            post.game != null -> {
+                val gameToPersist = Game(
+                    externalId = post.game.externalId,
+                    cover = post.game.cover,
+                    summary = post.game.summary,
+                    platform = post.game.platform.distinct(),
+                    name = post.game.name,
+                    developer = post.game.developer,
+                    meanScore = post.game.meanScore
+                )
+                gameRepository.findOrCreateByExternalId(gameToPersist).id
+            }
+            else -> throw ValidationException("Either gameId or game metadata must be provided.")
+        }
+
+        val newPost = convertDTOToPost(post, resolvedGameId)
         val result = postRepository.createPost(newPost)
         return result?.let(::convertPostToDTO)
     }
@@ -57,12 +78,12 @@ class PostService(
         return postRepository.deletePost(id)
     }
 
-    private fun convertDTOToPost(dto: PostDTO): Post {
+    private fun convertDTOToPost(dto: PostDTO, resolvedGameId: Uuid): Post {
         return if (dto.id != null) {
             Post(
                 id = dto.id,
                 userId = dto.userId,
-                gameId = dto.gameId,
+                gameId = resolvedGameId,
                 title = dto.title,
                 content = dto.content,
                 score = dto.score
@@ -70,7 +91,7 @@ class PostService(
         } else {
             Post(
                 userId = dto.userId,
-                gameId = dto.gameId,
+                gameId = resolvedGameId,
                 title = dto.title,
                 content = dto.content,
                 score = dto.score
