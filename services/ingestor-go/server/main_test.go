@@ -173,3 +173,33 @@ func TestGRPCServer_HealthCheck(t *testing.T) {
 		}
 	}
 }
+
+func TestRunHealthCheck_ServingAndUnavailable(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to listen on ephemeral port: %v", err)
+	}
+	addr := lis.Addr().String()
+
+	srv, _ := newGRPCServer(&mockGameSearcher{
+		searchFunc: func(ctx context.Context, searchString string) ([]domain.Game, error) {
+			return nil, nil
+		},
+	})
+	go func() {
+		_ = srv.Serve(lis)
+	}()
+
+	if err := runHealthCheck(addr); err != nil {
+		srv.Stop()
+		_ = lis.Close()
+		t.Fatalf("expected runHealthCheck(%s) to succeed, got error: %v", addr, err)
+	}
+
+	srv.GracefulStop()
+	_ = lis.Close()
+
+	if err := runHealthCheck(addr); err == nil {
+		t.Fatalf("expected runHealthCheck(%s) to fail after server shutdown", addr)
+	}
+}

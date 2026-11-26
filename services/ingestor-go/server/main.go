@@ -4,18 +4,22 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	igdbClient "github.com/Aliragm/pearl/services/ingestor-go/client"
 	"github.com/Aliragm/pearl/services/ingestor-go/domain"
 	pb "github.com/Aliragm/pearl/services/ingestor-go/proto/pearl/catalog/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
@@ -105,10 +109,47 @@ func newGRPCServer(searcher domain.GameSearcher) (*grpc.Server, *health.Server) 
 	return s, healthServer
 }
 
+func runHealthCheck(addr string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to create gRPC client: %w", err)
+	}
+	defer conn.Close()
+
+	resp, err := healthpb.NewHealthClient(conn).Check(ctx, &healthpb.HealthCheckRequest{
+		Service: pb.GameService_ServiceDesc.ServiceName,
+	})
+	if err != nil {
+		return fmt.Errorf("health check RPC failed: %w", err)
+	}
+	if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+		return fmt.Errorf("unexpected health status: %v", resp.GetStatus())
+	}
+	return nil
+}
+
 func main() {
+	healthCheck := flag.Bool("healthcheck", false, "run gRPC health check probe and exit")
+	flag.Parse()
+
+	port := strings.TrimSpace(os.Getenv("GRPC_PORT"))
+	if port == "" {
+		port = "8081"
+	}
+
+	if *healthCheck {
+		if err := runHealthCheck("127.0.0.1:" + port); err != nil {
+			log.Fatalf("healthcheck failed: %v", err)
+		}
+		return
+	}
+
 	loadEnv()
 
-	lis, err := net.Listen("tcp", ":8081")
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

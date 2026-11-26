@@ -17,6 +17,25 @@ services:
       timeout: 5s
       retries: 5
 
+  ingestor-go:
+    build:
+      context: ./services/ingestor-go
+      dockerfile: Dockerfile
+    container_name: pearl-ingestor-go
+    restart: unless-stopped
+    environment:
+      CLIENT_ID_TWITCH: ${CLIENT_ID_TWITCH:-}
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
+      GRPC_PORT: 8081
+    ports:
+      - "${INGESTOR_GRPC_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "/app/ingestor-go", "-healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   backend:
     build:
       context: .
@@ -26,10 +45,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      ingestor-go:
+        condition: service_healthy
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pearl_db}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      INGESTOR_GRPC_HOST: ingestor-go
+      INGESTOR_GRPC_PORT: 8081
+      INGESTOR_GRPC_DEADLINE_MS: ${INGESTOR_GRPC_DEADLINE_MS:-3000}
       PORT: 8080
     ports:
       - "8080:8080"
