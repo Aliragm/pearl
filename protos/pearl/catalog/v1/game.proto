@@ -3,6 +3,7 @@ syntax = "proto3";
 package pearl.catalog.v1;
 
 option go_package = "github.com/Aliragm/pearl/services/ingestor-go/proto/pearl/catalog/v1;catalogv1";
+option java_multiple_files = true;
 
 // GameService expõe operações de busca de jogos na API externa (IGDB).
 service GameService {
