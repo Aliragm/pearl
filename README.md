@@ -6,8 +6,12 @@ Repositório unificado da plataforma **Pearl.gg**, desenvolvido como projeto int
 
 ---
 
-## 🎥 Vídeos de Demonstração — Sprint 1 (T10)
+## 🎥 Vídeos de Demonstração
 
+### Sprint 2 — Microsserviço Go, gRPC e Persistência sob Demanda
+* 🎬 **Demonstração completa (5 min):** *(link a adicionar após gravação)*
+
+### Sprint 1 (T10)
 * 🌐 **Web II (DIM0547 — Backend Kotlin/Ktor, PostgreSQL, Flyway, Clean Architecture, Problem Details e OpenAPI):**  
   👉 [Assistir no YouTube (https://youtu.be/-nqagS4l5iU)](https://youtu.be/-nqagS4l5iU)
 * 📱 **Dispositivos Móveis (DIM0524 — Compose Multiplatform, Rotas Tipadas, Deep Link, Adaptatividade e Acessibilidade):**  
@@ -18,68 +22,110 @@ Repositório unificado da plataforma **Pearl.gg**, desenvolvido como projeto int
 ## 🏗️ Estrutura do Monorepo
 
 ```text
-pearlgg/
-├── docs/                        # Documentação da proposta (Sprint 0)
-│   └── proposta.md
-├── backend/                     # Serviço Principal em Kotlin / Ktor
-│   ├── src/
-│   └── build.gradle.kts
-├── services/                    # Microsserviços
-│   └── ingestor-go/             # Microsserviço de Ingestão e Cache em Go
+pearl/
+├── protos/                          # Contratos Protobuf versionados (Buf STANDARD + COMMENTS)
+│   ├── buf.yaml
+│   ├── buf.gen.yaml
+│   └── pearl/catalog/v1/game.proto
+├── docs/                            # Documentação e Decisões Arquiteturais
+│   ├── proposta.md
+│   └── decisoes/
+│       ├── 0001-microservico-ingestor-go-grpc.md
+│       └── 0002-estrategia-implantacao-containerizacao.md
+├── backend/                         # Serviço Principal em Kotlin / Ktor
+│   ├── Dockerfile
+│   ├── build.gradle.kts
+│   └── src/
+├── services/                        # Microsserviços
+│   └── ingestor-go/                 # Microsserviço gRPC de Ingestão da IGDB em Go
+│       ├── Dockerfile
 │       ├── go.mod
-│       ├── main.go
-│       └── main_test.go
-├── mobile/                      # Aplicativo Móvel (Kotlin Multiplatform / Compose)
+│       ├── client/                  # Client HTTP da IGDB e testes com httptest
+│       ├── domain/                  # Porta GameSearcher e normalização de plataformas
+│       ├── proto/                   # Stubs Go/gRPC gerados via Buf
+│       └── server/                  # Servidor gRPC (:8081), Health Check e testes com bufconn
+├── mobile/                          # Aplicativo Móvel (Kotlin Multiplatform / Compose)
 │   ├── src/
-│   │   ├── commonMain/          # Regras de negócio e UI compartilhadas (Android/iOS/Desktop)
-│   │   ├── androidMain/         # Específico Android
-│   │   ├── iosMain/             # Específico iOS
-│   │   └── desktopMain/         # Específico Desktop (Hot Reload)
+│   │   ├── commonMain/              # Regras de negócio e UI compartilhadas (Android/iOS/Desktop)
+│   │   ├── androidMain/             # Específico Android
+│   │   ├── iosMain/                 # Específico iOS
+│   │   └── desktopMain/             # Específico Desktop (Hot Reload)
 │   └── build.gradle.kts
-└── .github/
-    └── workflows/
-        └── ci.yml               # Pipeline de CI (GitHub Actions)
+├── .github/workflows/ci.yml         # Pipeline de CI (Buf lint, Go, Backend Ktor, Mobile KMP)
+├── docker-compose.yml               # Orquestração PostgreSQL + ingestor-go + backend
+├── .env.example                     # Modelo de variáveis de ambiente
+└── LICENSE                          # Licença MIT
 ```
 
 ---
 
 ## 🚀 Como Executar
 
-### 1. Banco de Dados (PostgreSQL via Docker Compose)
+### 0. Variáveis de Ambiente
+Copie `.env.example` para `.env` e preencha as credenciais da Twitch/IGDB (`CLIENT_ID_TWITCH` e `ACCESS_TOKEN`) se for consultar a API real da IGDB:
 ```bash
-docker compose up -d
+cp .env.example .env
 ```
-> O container iniciará o PostgreSQL com as migrações versionadas via Flyway na inicialização do backend.
 
-### 2. Backend (Ktor)
+### 1. Stack Completa via Docker Compose (PostgreSQL + `ingestor-go` + `backend`)
+```bash
+docker compose up --build -d
+```
+> O `docker-compose.yml` inicia o `postgres` (`pg_isready`) e o `ingestor-go` (probe gRPC `-healthcheck`) e só sobe o `backend` quando ambos estiverem com status `healthy`.
+
+### 2. Executando Localmente (fora do Docker)
+
+#### Banco de Dados (somente PostgreSQL)
+```bash
+docker compose up -d postgres
+```
+
+#### Microsserviço Go (`ingestor-go` — Servidor gRPC em `:8081`)
+```bash
+cd services/ingestor-go
+go run ./server
+```
+Para testar uma busca via `grpcurl` (com gRPC Reflection habilitado):
+```bash
+grpcurl -plaintext -d '{"search_string": "zelda"}' localhost:8081 pearl.catalog.v1.GameService/Search
+```
+
+#### Backend (Ktor em `:8080`)
 ```bash
 ./gradlew :backend:run
 ```
-> A API estará disponível em `http://localhost:8080`.
-> Documentação OpenAPI interativa (Swagger UI) disponível em `http://localhost:8080/swagger` e `http://localhost:8080/openapi`.
+> * API: `http://localhost:8080` | Swagger UI: `http://localhost:8080/swagger` | OpenAPI: `http://localhost:8080/openapi`
+> * **Busca integrada + fallback:** `GET /games/search?q=zelda` consulta o `ingestor-go` via gRPC com deadline configurado (`INGESTOR_GRPC_DEADLINE_MS`) e faz fallback automático para o PostgreSQL caso o microsserviço esteja indisponível (`X-Catalog-Source: igdb` ou `postgres-fallback`).
+> * **Persistência sob demanda:** ao enviar `POST /posts` com os metadados de `game` retornados pela busca (sem `gameId`), o backend persiste o jogo no PostgreSQL de forma idempotente pelo `external_id` antes de salvar a avaliação.
 
-### 3. Testes Automatizados (Unitários, StatusPages e Arquitetura Konsist)
+### 3. Contratos Protobuf (Buf) e Testes Automatizados
 ```bash
-./gradlew test
+# Lint e geração de stubs Go
+cd protos && buf lint && buf generate
+
+# Testes do microsserviço Go (normalização, client HTTP, gRPC bufconn e health check)
+cd services/ingestor-go && go test -v -race ./...
+
+# Testes do Backend Ktor (Protobuf/gRPC-Kotlin, grpc-inprocess, Konsist, unitários e Testcontainers)
+./gradlew :backend:test
+
+# Testes do Mobile KMP
+./gradlew :mobile:desktopTest
 ```
 
-### 4. Microsserviço Go
-```bash
-cd services/ingestor-go
-go run main.go
-```
-
-### 5. Aplicativo Móvel — KMP / Compose Multiplatform (DIM0524)
+### 4. Aplicativo Móvel — KMP / Compose Multiplatform (DIM0524)
 
 Para executar a versão Desktop (com *Hot Reload* / redimensionamento de janela para testar as 2 classes de largura):
 ```bash
 ./gradlew :mobile:run
 ```
 
-Para executar os testes unitários do módulo Mobile (incluindo validação pura de formulários):
-```bash
-./gradlew :mobile:desktopTest
-```
+---
+
+## 📐 Decisões Arquiteturais (ADRs)
+
+* [ADR-0001 — Microsserviço `ingestor-go` e Comunicação gRPC com Fallback](docs/decisoes/0001-microservico-ingestor-go-grpc.md)
+* [ADR-0002 — Estratégia de Containerização, Orquestração Local e Pipeline de CI](docs/decisoes/0002-estrategia-implantacao-containerizacao.md)
 
 ---
 
@@ -119,3 +165,8 @@ Durante a revisão das telas com foco em leitores de tela (TalkBack) e precisão
 5. **Contraste e Papéis do Tema Material 3 (`PearlTheme`):**
    * Foram definidos esquemas completos de cores para os modos **Claro** e **Escuro** em `Theme.kt`, substituindo cores fixas por papéis semânticos (`surface`, `surfaceContainer`, `onSurface`, `primary`, `primaryContainer`, `onSurfaceVariant`, `error`).
 
+---
+
+## 📄 Licença
+
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
