@@ -3,7 +3,10 @@ package gg.pearl.service
 import gg.pearl.dto.GameDTO
 import gg.pearl.dto.UpdateGameDTO
 import gg.pearl.fakes.InMemoryGameRepository
+import gg.pearl.model.Game
 import gg.pearl.model.enums.Platform
+import gg.pearl.model.port.CatalogSearchResult
+import gg.pearl.model.port.GameCatalogPort
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.uuid.Uuid
@@ -93,5 +96,81 @@ class GameServiceTest {
 
         val nonExisting = gameService.deleteGame(Uuid.random())
         assertFalse(nonExisting)
+    }
+
+    @Test
+    fun `searchGames returns external catalog enriched with persisted games without persisting new ones`() = runBlocking {
+        val persisted = fakeRepo.createGame(
+            Game(
+                externalId = 1022,
+                name = "The Legend of Zelda",
+                developer = "Nintendo",
+                platform = listOf(Platform.NINTENDO),
+                meanScore = 4.9
+            )
+        )!!
+
+        val port = object : GameCatalogPort {
+            override suspend fun searchGames(query: String): CatalogSearchResult {
+                return CatalogSearchResult.Success(
+                    listOf(
+                        Game(
+                            externalId = 1022,
+                            name = "The Legend of Zelda",
+                            developer = "Nintendo",
+                            platform = listOf(Platform.NINTENDO),
+                            cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg",
+                            summary = "Classic."
+                        ),
+                        Game(
+                            externalId = 9999,
+                            name = "Zelda II",
+                            developer = "Nintendo",
+                            platform = listOf(Platform.NINTENDO),
+                            cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/co2.jpg",
+                            summary = "Sequel."
+                        )
+                    )
+                )
+            }
+        }
+
+        val service = GameService(fakeRepo, port)
+        val result = service.searchGames("zelda")
+
+        assertFalse(result.fromFallback)
+        assertEquals(2L, result.page.total)
+        assertEquals(persisted.id, result.page.items[0].id)
+        assertEquals(4.9, result.page.items[0].meanScore)
+        assertNull(result.page.items[1].id)
+        assertEquals(9999, result.page.items[1].externalId)
+        assertNull(fakeRepo.getGameByExternalId(9999))
+    }
+
+    @Test
+    fun `searchGames falls back to PostgreSQL when catalog port is unavailable or times out`() = runBlocking {
+        fakeRepo.createGame(
+            Game(
+                externalId = 1022,
+                name = "The Legend of Zelda",
+                developer = "Nintendo",
+                platform = listOf(Platform.NINTENDO),
+                meanScore = 4.8
+            )
+        )
+
+        for (reason in listOf("UNAVAILABLE", "DEADLINE_EXCEEDED")) {
+            val failingPort = object : GameCatalogPort {
+                override suspend fun searchGames(query: String): CatalogSearchResult {
+                    return CatalogSearchResult.Unavailable(reason)
+                }
+            }
+            val service = GameService(fakeRepo, failingPort)
+            val result = service.searchGames("zelda")
+
+            assertTrue(result.fromFallback)
+            assertEquals(1L, result.page.total)
+            assertEquals("The Legend of Zelda", result.page.items.first().name)
+        }
     }
 }
