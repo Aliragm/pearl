@@ -16,6 +16,8 @@ interface GameRepository {
     ): Pair<List<Game>, Long>
 
     suspend fun getGameById(id: Uuid): Game?
+    suspend fun getGameByExternalId(externalId: Int): Game?
+    suspend fun findOrCreateByExternalId(game: Game): Game
     suspend fun createGame(game: Game): Game?
     suspend fun updateGame(id: Uuid, dto: UpdateGameDTO): Game?
     suspend fun deleteGame(id: Uuid): Boolean

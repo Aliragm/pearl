@@ -44,7 +44,10 @@ fun daoToModel(dao: UserDAO): User = User(
 
 // --- Games & Platforms ---
 object GameTable : UUIDTable("games") {
+    val externalId = integer("external_id").nullable().uniqueIndex()
+    val cover = text("cover").default("")
     val name = varchar("name", 255)
+    val summary = text("summary").default("")
     val developer = varchar("developer", 255)
     val meanScore = double("mean_score")
 }
@@ -58,7 +61,10 @@ object GamePlatformsTable : Table("game_platforms") {
 class GameDAO(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<GameDAO>(GameTable)
 
+    var externalId by GameTable.externalId
+    var cover by GameTable.cover
     var name by GameTable.name
+    var summary by GameTable.summary
     var developer by GameTable.developer
     var meanScore by GameTable.meanScore
 }
@@ -66,7 +72,10 @@ class GameDAO(id: EntityID<UUID>) : UUIDEntity(id) {
 @OptIn(ExperimentalUuidApi::class)
 fun daoToModel(dao: GameDAO, platforms: List<Platform>): Game = Game(
     id = dao.id.value.toKotlinUuid(),
+    externalId = dao.externalId,
+    cover = dao.cover,
     name = dao.name,
+    summary = dao.summary,
     developer = dao.developer,
     meanScore = dao.meanScore,
     platform = platforms

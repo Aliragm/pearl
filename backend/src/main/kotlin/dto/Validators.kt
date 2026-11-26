@@ -41,7 +41,9 @@ fun GameDTO.validate() {
 }
 
 fun UpdateGameDTO.validate() {
-    if (name == null && developer == null && meanScore == null && platform == null) {
+    if (name == null && developer == null && meanScore == null && platform == null &&
+        externalId == null && cover == null && summary == null
+    ) {
         throw ValidationException("At least one field must be provided to update a game.")
     }
     if (name != null && name.isBlank()) {
@@ -56,6 +58,10 @@ fun UpdateGameDTO.validate() {
 }
 
 fun PostDTO.validate() {
+    if (gameId == null && game == null) {
+        throw ValidationException("Either gameId or game metadata must be provided.")
+    }
+    game?.validate()
     if (title.isBlank()) {
         throw ValidationException("Post title must not be blank.")
     }
